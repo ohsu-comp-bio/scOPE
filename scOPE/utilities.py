@@ -23,7 +23,13 @@ def fetch_ensembl_ids(gene_names):
     
     gene_id_map = {}
     
+    i = 0
+    
     for gene in gene_names:
+        
+        if i % 100 == 0:
+            print('Fetching ENSEMBL ID for gene: ' + str(i) + ' out of: ' + str(len(gene_names)))
+        
         r = requests.get(f"{server}{ext.format(gene)}", headers=headers)
         if r.status_code == 200:
             decoded = r.json()
@@ -34,6 +40,8 @@ def fetch_ensembl_ids(gene_names):
                 gene_id_map[gene] = 'ID not found'
         else:
             gene_id_map[gene] = 'Error fetching ID'
+            
+        i += 1
     
     return gene_id_map
 
