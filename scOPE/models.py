@@ -1,0 +1,72 @@
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+import pickle
+
+
+def logistic_ridge_regression(gene_data, output_dir):
+    '''
+    Takes in a dictionary of gene data (an example of which is shown below in Parameters) and trains logistic ridge 
+    regression models to predict the presence or absence of a mutation within the specific gene using the samples'
+    corresponding RNA-seq data.
+    
+    Parameters:
+    - gene_data: This is a dictionary where the genes of interest are the keys, and they hold necessary information and 
+                 RNA-seq data to train the classification model. An example format of the dictionary is shown below:
+                 
+                 # Sample data structure
+                 gene_data = {
+                    'FLT3': {
+                        'gene_id': 'gene_1',
+                        'positive_sample_count': 10,
+                        'mut_sequencing_data': pd.DataFrame(np.random.rand(10, 100)),
+                        'non-mut_sequencing_data': pd.DataFrame(np.random.rand(10, 100))
+                    },
+                    'RUNX1': {
+                        'gene_id': 'gene_2',
+                        'positive_sample_count': 15,
+                        'mut_sequencing_data': pd.DataFrame(np.random.rand(15, 100)),
+                        'non-mut_sequencing_data': pd.DataFrame(np.random.rand(15, 100))
+                    },
+                    # Add other genes similarly...
+                 }
+                 
+    - output_dir: A directory string in the following format: '/home/groups/users/ashforda/chosen_output_dir/'
+                  # NOTE: The slash at the end is important!
+    
+    Returns:
+    - The function saves a trained model to the directory specified as output_dir. Function does not "return" anything.
+    
+    '''
+
+    # Iterate through the dictionary
+    for gene, data in gene_data.items():
+        # Get the sequencing data for mutated and non-mutated samples
+        mut_data = data['mut_sequencing_data']
+        non_mut_data = data['non-mut_sequencing_data']
+    
+        # Create labels (1 for mutated, 0 for non-mutated)
+        mut_labels = np.ones(mut_data.shape[0])
+        non_mut_labels = np.zeros(non_mut_data.shape[0])
+    
+        # Combine the data and labels
+        X = pd.concat([mut_data, non_mut_data], ignore_index=True)
+        y = np.concatenate([mut_labels, non_mut_labels])
+    
+        # Train the logistic ridge regression model
+        model = make_pipeline(StandardScaler(), LogisticRegression(penalty='l2', solver='liblinear'))
+        model.fit(X, y)
+    
+        # Save the trained model to a pickle file
+        model_filename = f"{gene}_logistic_ridge_model.pkl"
+        with open(output_dir + model_filename, 'wb') as f:
+            pickle.dump(model, f)
+    
+        print(f"Trained and saved model for gene: {gene} as {model_filename}")
+
+
+
+
+

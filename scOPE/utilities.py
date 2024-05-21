@@ -1,7 +1,16 @@
 import requests
+import pandas as pd
+import numpy as np
 
 def fetch_ensembl_ids(gene_names):
     '''
+    Takes a list of gene names and returns a dictionary where the keys are gene names and the values are ENSEMBL gene IDs.
+    
+    Parameters:
+    - 
+    
+    Returns:
+    - 
     
     '''
     # Need to make sure getting the correct ENSEMBL gene version!
@@ -29,6 +38,13 @@ def fetch_ensembl_ids(gene_names):
 
 def fetch_gene_names_from_ids(ensembl_ids):
     '''
+    Takes a list of ENSEMBL gene IDs and returns a dictionary with ENSEMBL IDs as keys and gene names as values.
+    
+    Parameters:
+    - ensembl_ids: A list of ENSEMBL gene IDs.
+    
+    Returns:
+    - gene_name_map: A dictionary housing the ENSEMBL IDs as keys and gene names as values.
     
     '''
     server = "https://rest.ensembl.org"
@@ -50,5 +66,41 @@ def fetch_gene_names_from_ids(ensembl_ids):
             gene_name_map[ensembl_id] = 'Error fetching gene name'
     
     return gene_name_map
+
+
+def sample_rna_seq_data(normalized_scaled_bulk_rna, used_sample_ids, num_samples, random_seed=None):
+    """
+    Randomly sample rows from normalized_scaled_bulk_rna avoiding the samples already used.
+
+    Parameters:
+    - normalized_scaled_bulk_rna: DataFrame to sample from.
+    - used_sample_ids: List of sample IDs to avoid.
+    - num_samples: Number of samples to draw.
+    - random_seed: Random seed for reproducibility (default: None).
+
+    Returns:
+    - DataFrame with the sampled rows.
+    
+    """
+    # Set the random seed for reproducibility
+    if random_seed is not None:
+        np.random.seed(random_seed)
+    
+    # Get available sample IDs by excluding used sample IDs
+    available_sample_ids = normalized_scaled_bulk_rna.index.difference(used_sample_ids)
+    
+    # If there are fewer available samples than requested, adjust the number of samples
+    if len(available_sample_ids) < num_samples:
+        print(f"Only {len(available_sample_ids)} available samples, adjusting the number of samples to {len(available_sample_ids)}")
+        num_samples = len(available_sample_ids)
+    
+    # Randomly sample from the available sample IDs
+    sampled_ids = np.random.choice(available_sample_ids, size=num_samples, replace=False)
+    
+    # Filter the DataFrame to include only the sampled IDs
+    sampled_rna_seq_data = normalized_scaled_bulk_rna.loc[sampled_ids]
+    
+    return sampled_rna_seq_data
+
 
 
