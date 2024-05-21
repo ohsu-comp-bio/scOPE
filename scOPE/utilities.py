@@ -27,3 +27,28 @@ def fetch_ensembl_ids(gene_names):
     return gene_id_map
 
 
+def fetch_gene_names_from_ids(ensembl_ids):
+    '''
+    
+    '''
+    server = "https://rest.ensembl.org"
+    ext = "/lookup/id/{}"
+    headers = {'Content-Type': 'application/json'}
+    
+    gene_name_map = {}
+    
+    for ensembl_id in ensembl_ids:
+        response = requests.get(f"{server}{ext.format(ensembl_id)}", headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            gene_name = data.get('display_name')
+            if gene_name:
+                gene_name_map[ensembl_id] = gene_name
+            else:
+                gene_name_map[ensembl_id] = 'Gene name not found'
+        else:
+            gene_name_map[ensembl_id] = 'Error fetching gene name'
+    
+    return gene_name_map
+
+
