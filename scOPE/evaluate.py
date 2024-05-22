@@ -37,7 +37,7 @@ def predict_single_cell_mutation(single_cell_data, model):
     return predictions
 
 
-def predict_mutations_in_single_cells(gene_models_dir, single_cell_data):
+def predict_mutations_in_single_cells_logistic(gene_models_dir, single_cell_data):
     '''
     Applies each gene mutation prediction model to the single-cell RNA-seq data.
     
@@ -56,6 +56,41 @@ def predict_mutations_in_single_cells(gene_models_dir, single_cell_data):
             
             # Extract gene name from the file name
             gene_name = model_file.split('_logistic_ridge_model.pkl')[0]
+            
+            # Load the model
+            model_path = os.path.join(gene_models_dir, model_file)
+            model = utilities.load_model(gene_models_dir, gene_name)
+            
+            # Predict mutations in single-cell data
+            predictions = predict_single_cell_mutation(single_cell_data, model)
+            
+            # Store predictions in the dictionary
+            predictions_dict[gene_name] = predictions
+            
+            print(f"Predictions for {gene_name} completed.")
+    
+    return predictions_dict
+
+
+def predict_mutations_in_single_cells_random_forest(gene_models_dir, single_cell_data):
+    '''
+    Applies each gene mutation prediction model to the single-cell RNA-seq data.
+    
+    Parameters:
+    - gene_models_dir: Directory where the trained models are saved.
+    - single_cell_data: DataFrame containing the single-cell RNA-seq data.
+    
+    Returns:
+    - A dictionary with gene names as keys and prediction results as values.
+    '''
+    predictions_dict = {}
+    
+    # Iterate through the files in the gene models directory
+    for model_file in os.listdir(gene_models_dir):
+        if model_file.endswith('_random_forest_model.pkl'):
+            
+            # Extract gene name from the file name
+            gene_name = model_file.split('_random_forest_model.pkl')[0]
             
             # Load the model
             model_path = os.path.join(gene_models_dir, model_file)
