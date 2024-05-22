@@ -30,8 +30,8 @@ from scOPE import evaluate
 def predict_single_cell_mutation(single_cell_data, model):
     '''Predicts the mutation presence or absence in single-cell data using the provided model.'''
     # Ensure the single-cell data is in the correct shape (transpose if necessary)
-    if single_cell_data.shape[0] > single_cell_data.shape[1]:
-        single_cell_data = single_cell_data.T
+    #if single_cell_data.shape[0] > single_cell_data.shape[1]:
+        #single_cell_data = single_cell_data.T
     # Use the model to predict the mutation status
     predictions = model.predict(single_cell_data)
     return predictions

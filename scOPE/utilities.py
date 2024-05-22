@@ -121,17 +121,48 @@ def load_model(directory_name, gene_name):
     return model
 
 
-# Functions to extract the necessary information from gene dictionaries
-def get_rna_seq_data(gene_data, gene_name):
-    gene_info = gene_data[gene_name]
-    mut_data = gene_info['mut_sequencing_data']
-    non_mut_data = gene_info['non-mut_sequencing_data']
+def select_top_variable_genes_bulk_rnaseq(df: pd.DataFrame, top_n: int) -> pd.DataFrame:
+    """
+    Selects the top N most variable genes in bulk RNA-seq data.
+
+    Parameters:
+    - df: pandas DataFrame, rows are samples and columns are genes.
+    - top_n: int, number of top variable genes to select.
+
+    Returns:
+    - pandas DataFrame with the top N most variable genes.
+    """
+    # Calculate the coefficient of variation (CV) for each gene
+    means = df.mean(axis=0)
+    stds = df.std(axis=0)
+    cvs = stds / means
     
-    X = pd.concat([mut_data, non_mut_data], ignore_index=True)
-    y_mut = np.ones(mut_data.shape[0])
-    y_non_mut = np.zeros(non_mut_data.shape[0])
-    y = np.concatenate([y_mut, y_non_mut])
+    # Select the top N genes with the highest CV
+    top_genes = cvs.nlargest(top_n).index
+    return df[top_genes]
+
+
+def select_top_variable_genes_scrnaseq(df: pd.DataFrame, top_n: int) -> pd.DataFrame:
+    """
+    Selects the top N most variable genes in scRNA-seq data.
+
+    Parameters:
+    - df: pandas DataFrame, rows are samples and columns are genes.
+    - top_n: int, number of top variable genes to select.
+
+    Returns:
+    - pandas DataFrame with the top N most variable genes.
+    """
+    # Calculate the mean and variance for each gene
+    means = df.mean(axis=0)
+    variances = df.var(axis=0)
     
-    return X, y
+    # Calculate normalized variance
+    norm_variances = variances / means
+    
+    # Select the top N genes with the highest normalized variance
+    top_genes = norm_variances.nlargest(top_n).index
+    return df[top_genes]
+
 
 
