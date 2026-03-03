@@ -12,7 +12,7 @@
 
 ## scOPE workflow (transfer learning from bulk → single-cell)
 
-**scOPE (single-cell Oncological Prediction Explorer)** is a transfer-learning framework that uses *bulk RNA-seq cohorts with known mutation status* to learn a compact, biologically meaningful latent space, then projects *single-cell RNA-seq* into that same space to predict the probability that **specific cancer-associated gene mutations** are present in individual cells. This provides mutation-informed subclonal structure that can complement CNV-based approaches and increase subclonal granularity.
+**scOPE (single-cell Oncological Prediction Explorer)** is a transfer-learning framework that uses *bulk RNA-seq cohorts with known mutation status* to learn a compact, biologically meaningful latent space, then projects *single-cell RNA-seq* into that same space to predict the probability that **specific cancer-associated gene mutations** are present in individual cells. This provides mutation-informed subclonal structure that can complement CNV methods and increase subclonal granularity.
 
 ### Overview
 
@@ -28,7 +28,12 @@ scOPE proceeds in two phases:
    Decompose the normalized bulk matrix using SVD:
 
    <p align="center">
-     <img src="https://latex.codecogs.com/svg.image?A_%7B%5Ctext%7Bbulk%7D%7D%20%3D%20U_%7B%5Ctext%7Bbulk%7D%7D%20%5CSigma_%7B%5Ctext%7Bbulk%7D%7D%20V%5E%5Ctop" alt="A_bulk = U_bulk Σ_bulk V^T" />
+     <picture>
+       <source media="(prefers-color-scheme: dark)"
+               srcset="https://latex.codecogs.com/svg.image?\color{white}{A_{\text{bulk}}=U_{\text{bulk}}\Sigma_{\text{bulk}}V^{\top}}">
+       <img src="https://latex.codecogs.com/svg.image?A_{\text{bulk}}=U_{\text{bulk}}\Sigma_{\text{bulk}}V^{\top}"
+            alt="A_bulk = U_bulk Σ_bulk V^T">
+     </picture>
    </p>
 
    * **U_bulk**: sample scores (rows = patients, columns = latent factors)  
@@ -38,7 +43,12 @@ scOPE proceeds in two phases:
    Define the bulk latent representation (patient-by-factor embedding):
 
    <p align="center">
-     <img src="https://latex.codecogs.com/svg.image?Z_%7B%5Ctext%7Bbulk%7D%7D%20%3D%20U_%7B%5Ctext%7Bbulk%7D%7D%20%5CSigma_%7B%5Ctext%7Bbulk%7D%7D" alt="Z_bulk = U_bulk Σ_bulk" />
+     <picture>
+       <source media="(prefers-color-scheme: dark)"
+               srcset="https://latex.codecogs.com/svg.image?\color{white}{Z_{\text{bulk}}=U_{\text{bulk}}\Sigma_{\text{bulk}}}">
+       <img src="https://latex.codecogs.com/svg.image?Z_{\text{bulk}}=U_{\text{bulk}}\Sigma_{\text{bulk}}"
+            alt="Z_bulk = U_bulk Σ_bulk">
+     </picture>
    </p>
 
 3. **Train mutation-prediction models in latent space**  
@@ -60,7 +70,12 @@ scOPE proceeds in two phases:
    Use the bulk-derived gene loadings **V** to compute the single-cell latent representation:
 
    <p align="center">
-     <img src="https://latex.codecogs.com/svg.image?Z_%7B%5Ctext%7Bsc%7D%7D%20%3D%20A%27_%7B%5Ctext%7Bsc%7D%7D%20V" alt="Z_sc = A'_sc V" />
+     <picture>
+       <source media="(prefers-color-scheme: dark)"
+               srcset="https://latex.codecogs.com/svg.image?\color{white}{Z_{\text{sc}}=A'_{\text{sc}}V}">
+       <img src="https://latex.codecogs.com/svg.image?Z_{\text{sc}}=A'_{\text{sc}}V"
+            alt="Z_sc = A'_sc V">
+     </picture>
    </p>
 
    Then apply the trained bulk models to **Z_sc** to predict **per-cell mutation probabilities**, producing mutation-informed cellular maps that can be analyzed alongside expression programs, clusters, and CNV signals.
