@@ -1,0 +1,68 @@
+# -------------------------
+# Python cache / bytecode
+# -------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.dll
+
+# -------------------------
+# Build / packaging artifacts
+# -------------------------
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# -------------------------
+# Jupyter notebooks
+# -------------------------
+.ipynb_checkpoints/
+*.ipynb~
+*.nbconvert.ipynb
+
+# -------------------------
+# OS / editor cruft
+# -------------------------
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+*.orig
+
+# -------------------------
+# Logs / temp files
+# -------------------------
+*.log
+*.tmp
+*.bak
+
+# -------------------------
+# Large local data & models
+# (keep only small metadata READMEs)
+# -------------------------
+data/**
+!data/README.md
+
+saved_models/
+/figures/
+
+# allow versioned assets figures
+!assets/
+!assets/figures/
+!assets/figures/**
+
+# -------------------------
+# Environment files (optional)
+# -------------------------
+.env
+.env.*
+
+
+.DS_Store
+**/.DS_Store
+staged-recipes/
+
