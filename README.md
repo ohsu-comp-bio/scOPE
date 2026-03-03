@@ -1,6 +1,6 @@
 # scOPE
 
-(single-cell Oncological Prediction Explorer)
+single-cell Oncological Prediction Explorer
 
 <picture>
   <source media="(prefers-color-scheme: dark)"
