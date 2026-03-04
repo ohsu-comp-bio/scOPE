@@ -19,7 +19,6 @@ from __future__ import annotations
 import functools
 import pickle
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -81,13 +80,13 @@ class BulkPipeline(BaseEstimator):
         scale: bool = True,
         decomposition: str = "svd",
         n_components: int = 50,
-        decomposition_kwargs: Optional[dict] = None,
+        decomposition_kwargs: dict | None = None,
         classifier: str = "logistic",
-        classifier_kwargs: Optional[dict] = None,
+        classifier_kwargs: dict | None = None,
         min_positive_frac: float = 0.05,
         scale_features: bool = True,
-        gene_lengths: Optional[np.ndarray] = None,
-        layer: Optional[str] = None,
+        gene_lengths: np.ndarray | None = None,
+        layer: str | None = None,
     ):
         self.norm_method = norm_method
         self.log1p = log1p
@@ -108,8 +107,8 @@ class BulkPipeline(BaseEstimator):
         self,
         adata_bulk: AnnData,
         mutation_labels: pd.DataFrame,
-        cv: Optional[int] = None,
-    ) -> "BulkPipeline":
+        cv: int | None = None,
+    ) -> BulkPipeline:
         """Learn latent space and train mutation classifiers.
 
         Parameters
@@ -251,7 +250,7 @@ class BulkPipeline(BaseEstimator):
         log.info("BulkPipeline saved to '%s'.", path)
 
     @classmethod
-    def load(cls, path: PathLike) -> "BulkPipeline":
+    def load(cls, path: PathLike) -> BulkPipeline:
         """Load a previously saved pipeline.
 
         Parameters
