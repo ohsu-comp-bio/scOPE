@@ -139,13 +139,16 @@ class BulkPipeline(BaseEstimator):
         if len(shared_samples) < adata_bulk.n_obs:
             log.warning(
                 "Subsetting to %d / %d samples with mutation labels.",
-                len(shared_samples), adata_bulk.n_obs,
+                len(shared_samples),
+                adata_bulk.n_obs,
             )
         adata_bulk = adata_bulk[shared_samples].copy()
         mutation_labels = mutation_labels.loc[shared_samples]
 
         # ── 2. Preprocessing ──────────────────────────────────────────────
-        log.info("Preprocessing bulk data (norm=%s, log1p=%s).", self.norm_method, self.log1p)
+        log.info(
+            "Preprocessing bulk data (norm=%s, log1p=%s).", self.norm_method, self.log1p
+        )
         self.preprocessor_ = BulkPreprocessor(
             norm_method=self.norm_method,
             log1p=self.log1p,
@@ -213,12 +216,18 @@ class BulkPipeline(BaseEstimator):
         return self.classifier_set_.predict_proba(Z)
 
     # ------------------------------------------------------------------
-    def evaluate(self, adata_bulk: AnnData, mutation_labels: pd.DataFrame) -> pd.DataFrame:
+    def evaluate(
+        self, adata_bulk: AnnData, mutation_labels: pd.DataFrame
+    ) -> pd.DataFrame:
         """Evaluate on a held-out bulk dataset."""
         proba_df = self.predict_bulk(adata_bulk)
         shared = adata_bulk.obs_names.intersection(mutation_labels.index)
         labels_sub = mutation_labels.loc[shared]
-        proba_sub = proba_df.loc[proba_df.index.isin(shared)] if hasattr(proba_df.index, 'isin') else proba_df
+        proba_sub = (
+            proba_df.loc[proba_df.index.isin(shared)]
+            if hasattr(proba_df.index, "isin")
+            else proba_df
+        )
         return evaluate_all(labels_sub, proba_sub)
 
     # ------------------------------------------------------------------

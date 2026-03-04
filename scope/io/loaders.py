@@ -134,9 +134,7 @@ def load_delimited(
     adata = AnnData(X=df.values.astype(np.float32))
     adata.obs_names = list(df.index.astype(str))
     adata.var_names = list(df.columns.astype(str))
-    log.info(
-        "Loaded delimited file: %d samples × %d genes.", adata.n_obs, adata.n_vars
-    )
+    log.info("Loaded delimited file: %d samples × %d genes.", adata.n_obs, adata.n_vars)
     return adata
 
 
@@ -160,9 +158,7 @@ def load_10x_mtx(
     import scanpy as sc
 
     adata = sc.read_10x_mtx(str(path), var_names=var_names, cache=cache)
-    log.info(
-        "Loaded 10x MTX: %d cells × %d genes.", adata.n_obs, adata.n_vars
-    )
+    log.info("Loaded 10x MTX: %d cells × %d genes.", adata.n_obs, adata.n_vars)
     return adata
 
 
@@ -179,9 +175,7 @@ def load_10x_h5(path: PathLike, genome: str | None = None) -> AnnData:
     import scanpy as sc
 
     adata = sc.read_10x_h5(str(path), genome=genome)
-    log.info(
-        "Loaded 10x H5: %d cells × %d genes.", adata.n_obs, adata.n_vars
-    )
+    log.info("Loaded 10x H5: %d cells × %d genes.", adata.n_obs, adata.n_vars)
     return adata
 
 
@@ -234,7 +228,5 @@ def load_mutation_labels(
     df = pd.read_csv(str(path), sep=sep)
     if sample_col in df.columns:
         df = df.set_index(sample_col)
-    log.info(
-        "Loaded mutation labels: %d samples, %d mutations.", len(df), df.shape[1]
-    )
+    log.info("Loaded mutation labels: %d samples, %d mutations.", len(df), df.shape[1])
     return df.astype(int)

@@ -35,6 +35,7 @@ class BaseMutationClassifier(ABC, BaseEstimator, ClassifierMixin):
 
     def score(self, Z: np.ndarray, y: np.ndarray) -> float:
         from sklearn.metrics import roc_auc_score
+
         proba = self.predict_proba(Z)[:, 1]
         return roc_auc_score(y, proba)
 
@@ -80,10 +81,14 @@ class PerMutationClassifierSet:
         for mutation in labels.columns:
             y = labels[mutation].values
             pos_frac = y.mean()
-            if pos_frac < self.min_positive_frac or pos_frac > (1 - self.min_positive_frac):
+            if pos_frac < self.min_positive_frac or pos_frac > (
+                1 - self.min_positive_frac
+            ):
                 log.warning(
                     "Skipping '%s': positive fraction=%.3f (threshold=%.3f).",
-                    mutation, pos_frac, self.min_positive_frac,
+                    mutation,
+                    pos_frac,
+                    self.min_positive_frac,
                 )
                 self.skipped_.append(mutation)
                 continue
@@ -95,7 +100,9 @@ class PerMutationClassifierSet:
             self.classifiers_[mutation] = clf
             log.info(
                 "Trained classifier for '%s' (n_pos=%d / n_tot=%d).",
-                mutation, y.sum(), len(y),
+                mutation,
+                y.sum(),
+                len(y),
             )
         return self
 

@@ -92,9 +92,10 @@ class SVDDecomposition(BaseDecomposition):
         k = min(self.n_components, X.shape[0] - 1, X.shape[1] - 1)
         if k != self.n_components:
             log.warning(
-                "Requested %d components but matrix allows at most %d; "
-                "using %d.",
-                self.n_components, k, k,
+                "Requested %d components but matrix allows at most %d; " "using %d.",
+                self.n_components,
+                k,
+                k,
             )
 
         if self.algorithm == "randomized":
@@ -118,14 +119,16 @@ class SVDDecomposition(BaseDecomposition):
             raise ValueError(f"Unknown SVD algorithm: {self.algorithm!r}")
 
         # Store gene loadings (V) — shape (n_genes, k)
-        self.components_ = Vt          # (k, n_genes)
-        self.singular_values_ = S      # (k,)
+        self.components_ = Vt  # (k, n_genes)
+        self.singular_values_ = S  # (k,)
         self.n_components_ = k
 
         # Compute and store explained variance ratio
-        total_var = np.sum(X ** 2)
-        self.explained_variance_ = S ** 2 / X.shape[0]
-        self._explained_variance_ratio_ = S ** 2 / total_var if total_var > 0 else np.zeros(k)
+        total_var = np.sum(X**2)
+        self.explained_variance_ = S**2 / X.shape[0]
+        self._explained_variance_ratio_ = (
+            S**2 / total_var if total_var > 0 else np.zeros(k)
+        )
 
         log.info(
             "SVD fitted: %d components (cumulative EVR=%.3f).",
@@ -186,9 +189,7 @@ class SVDDecomposition(BaseDecomposition):
         cumvar = np.cumsum(self._explained_variance_ratio_)
         idx = np.searchsorted(cumvar, threshold)
         n = int(idx) + 1
-        log.info(
-            "%d components explain %.1f%% of variance.", n, threshold * 100
-        )
+        log.info("%d components explain %.1f%% of variance.", n, threshold * 100)
         return n
 
     def scree_data(self) -> dict:

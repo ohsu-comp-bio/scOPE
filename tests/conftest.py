@@ -34,7 +34,9 @@ def gene_names(n_genes):
 @pytest.fixture(scope="session")
 def adata_bulk(rng, n_bulk_samples, n_genes, gene_names):
     """Synthetic bulk RNA-seq AnnData (samples × genes, raw counts)."""
-    X = rng.negative_binomial(10, 0.5, size=(n_bulk_samples, n_genes)).astype(np.float32)
+    X = rng.negative_binomial(10, 0.5, size=(n_bulk_samples, n_genes)).astype(
+        np.float32
+    )
     adata = AnnData(X=X)
     adata.obs_names = [f"SAMPLE{i:03d}" for i in range(n_bulk_samples)]
     adata.var_names = gene_names

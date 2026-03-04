@@ -71,8 +71,6 @@ class TestCrossValidate:
             {"KRAS": rng.binomial(1, 0.4, n)},
             index=[f"S{i}" for i in range(n)],
         )
-        result = cross_validate_classifiers(
-            Z, labels, LogisticMutationClassifier, cv=3
-        )
+        result = cross_validate_classifiers(Z, labels, LogisticMutationClassifier, cv=3)
         assert "auroc" in result.columns
         assert len(result) == 3  # 3 folds × 1 mutation

@@ -63,7 +63,7 @@ class PCADecomposition(BaseDecomposition):
             random_state=self.random_state,
         )
         self._model.fit(X)
-        self.components_ = self._model.components_          # (k, n_genes)
+        self.components_ = self._model.components_  # (k, n_genes)
         self._evr_ = self._model.explained_variance_ratio_
         self.n_components_ = self.n_components
         log.info(

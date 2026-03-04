@@ -174,12 +174,15 @@ def plot_embedding(
         fig = ax.get_figure()
 
     if color_key is None:
-        ax.scatter(coords[:, 0], coords[:, 1], s=point_size, alpha=alpha, rasterized=True)
+        ax.scatter(
+            coords[:, 0], coords[:, 1], s=point_size, alpha=alpha, rasterized=True
+        )
     else:
         values = adata.obs[color_key].values
         if pd.api.types.is_numeric_dtype(values):
             sc = ax.scatter(
-                coords[:, 0], coords[:, 1],
+                coords[:, 0],
+                coords[:, 1],
                 c=values.astype(float),
                 s=point_size,
                 alpha=alpha,
@@ -198,7 +201,8 @@ def plot_embedding(
             for i, cat in enumerate(categories.categories):
                 mask = categories == cat
                 ax.scatter(
-                    coords[mask, 0], coords[mask, 1],
+                    coords[mask, 0],
+                    coords[mask, 1],
                     s=point_size,
                     alpha=alpha,
                     color=palette[i % len(palette)],
@@ -259,14 +263,19 @@ def plot_mutation_probabilities(
     """
     prob_cols = [c for c in adata.obs.columns if c.startswith("mutation_prob_")]
     if mutations is not None:
-        prob_cols = [f"mutation_prob_{m}" for m in mutations if f"mutation_prob_{m}" in adata.obs.columns]
+        prob_cols = [
+            f"mutation_prob_{m}"
+            for m in mutations
+            if f"mutation_prob_{m}" in adata.obs.columns
+        ]
     if not prob_cols:
         raise ValueError("No mutation_prob_* columns found in adata.obs.")
 
     ncols = min(ncols, len(prob_cols))
     nrows = int(np.ceil(len(prob_cols) / ncols))
     fig, axes = plt.subplots(
-        nrows, ncols,
+        nrows,
+        ncols,
         figsize=(figsize_per_panel[0] * ncols, figsize_per_panel[1] * nrows),
         squeeze=False,
     )
@@ -276,9 +285,15 @@ def plot_mutation_probabilities(
         ax = axes[row][c]
         values = adata.obs[col].values.astype(float)
         sc = ax.scatter(
-            coords[:, 0], coords[:, 1],
-            c=values, cmap=cmap, vmin=vmin, vmax=vmax,
-            s=point_size, alpha=0.8, rasterized=True,
+            coords[:, 0],
+            coords[:, 1],
+            c=values,
+            cmap=cmap,
+            vmin=vmin,
+            vmax=vmax,
+            s=point_size,
+            alpha=0.8,
+            rasterized=True,
         )
         fig.colorbar(sc, ax=ax, fraction=0.046, pad=0.04)
         gene = col.replace("mutation_prob_", "")
@@ -339,7 +354,9 @@ def plot_scree(
 
     ax2 = ax.twinx()
     ax.bar(comp, evr, color="#4393c3", alpha=0.8, label="Explained variance ratio")
-    ax2.plot(comp, cumevr, color="#d6604d", marker="o", markersize=3, label="Cumulative EVR")
+    ax2.plot(
+        comp, cumevr, color="#d6604d", marker="o", markersize=3, label="Cumulative EVR"
+    )
     ax2.axhline(0.9, ls="--", color="grey", lw=0.8, label="90% threshold")
     ax.set_xlabel("Component")
     ax.set_ylabel("Explained variance ratio", color="#4393c3")
@@ -390,7 +407,11 @@ def plot_mutation_heatmap(
 
     prob_cols = [c for c in adata.obs.columns if c.startswith("mutation_prob_")]
     if mutations is not None:
-        prob_cols = [f"mutation_prob_{m}" for m in mutations if f"mutation_prob_{m}" in adata.obs.columns]
+        prob_cols = [
+            f"mutation_prob_{m}"
+            for m in mutations
+            if f"mutation_prob_{m}" in adata.obs.columns
+        ]
 
     df = adata.obs[[cluster_key] + prob_cols].copy()
     mean_prob = df.groupby(cluster_key)[prob_cols].mean()

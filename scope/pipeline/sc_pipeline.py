@@ -114,7 +114,9 @@ class SingleCellPipeline(BaseEstimator):
         adata_sc_pp = self.sc_preprocessor_.fit_transform(adata_sc)
 
         # ── Gene universe alignment ────────────────────────────────────
-        adata_bulk_sub, adata_sc_sub = subset_to_shared_genes(adata_bulk_pp, adata_sc_pp)
+        adata_bulk_sub, adata_sc_sub = subset_to_shared_genes(
+            adata_bulk_pp, adata_sc_pp
+        )
 
         # ── Moment matching / alignment ────────────────────────────────
         self.aligner_ = BulkSCAligner(
@@ -184,11 +186,13 @@ class SingleCellPipeline(BaseEstimator):
         if missing > 0:
             log.warning(
                 "%d / %d bulk genes absent from sc data (will be zero-padded).",
-                missing, len(bulk_genes),
+                missing,
+                len(bulk_genes),
             )
 
         # Re-index sc to exact bulk gene order, zero-filling gaps
         import scipy.sparse as sp
+
         X_sc = adata_pp.X
         if sp.issparse(X_sc):
             X_sc = X_sc.toarray()
@@ -199,6 +203,7 @@ class SingleCellPipeline(BaseEstimator):
                 X_aligned[:, j] = X_sc[:, gene_idx[g]]
 
         import anndata as ad
+
         adata_aligned = ad.AnnData(X=X_aligned)
         adata_aligned.obs_names = list(adata_pp.obs_names)
         adata_aligned.var_names = bulk_genes
@@ -218,9 +223,7 @@ class SingleCellPipeline(BaseEstimator):
 
         # ── 5. Mutation probabilities ──────────────────────────────────
         prob_df = bp.classifier_set_.predict_proba(Z_sc)
-        log.info(
-            "Inferred probabilities for %d mutations.", len(prob_df.columns)
-        )
+        log.info("Inferred probabilities for %d mutations.", len(prob_df.columns))
 
         # ── 6. Write back to AnnData ───────────────────────────────────
         result = adata_emb.copy()

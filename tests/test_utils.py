@@ -49,7 +49,13 @@ class TestCheckMutationLabels:
 
     def test_no_overlap(self, mutation_labels):
         adata = AnnData(np.zeros((5, 50)))
-        adata.obs_names = ["NOMATCH_0", "NOMATCH_1", "NOMATCH_2", "NOMATCH_3", "NOMATCH_4"]
+        adata.obs_names = [
+            "NOMATCH_0",
+            "NOMATCH_1",
+            "NOMATCH_2",
+            "NOMATCH_3",
+            "NOMATCH_4",
+        ]
         with pytest.raises(ValueError, match="No overlapping"):
             check_mutation_labels(mutation_labels, adata=adata)
 
@@ -58,12 +64,15 @@ class TestCheckIsFixed:
     def test_fitted(self):
         class MyEstimator:
             coef_ = np.array([1.0])
+
         check_is_fitted(MyEstimator(), ["coef_"])
 
     def test_not_fitted(self):
         from sklearn.exceptions import NotFittedError
+
         class MyEstimator:
             pass
+
         with pytest.raises(NotFittedError):
             check_is_fitted(MyEstimator(), ["coef_"])
 
@@ -100,7 +109,7 @@ class TestGeneUtils:
         assert out.shape == (2, 3)
         np.testing.assert_array_equal(out[:, 0], X[:, 2])  # C
         np.testing.assert_array_equal(out[:, 1], X[:, 0])  # A
-        np.testing.assert_array_equal(out[:, 2], 0.0)      # D (missing → 0)
+        np.testing.assert_array_equal(out[:, 2], 0.0)  # D (missing → 0)
 
     def test_filter_variable_genes(self, adata_bulk):
         selected = filter_variable_genes(adata_bulk, n_top_genes=100)

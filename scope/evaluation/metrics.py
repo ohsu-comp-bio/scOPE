@@ -47,16 +47,32 @@ def evaluate_classifier(
     n_neg = int((1 - y_true).sum())
     if n_pos == 0 or n_neg == 0:
         log.warning("'%s': degenerate label vector — skipping metrics.", mutation_name)
-        return {"auroc": float("nan"), "auprc": float("nan"), "brier": float("nan"),
-                "n_pos": n_pos, "n_neg": n_neg}
+        return {
+            "auroc": float("nan"),
+            "auprc": float("nan"),
+            "brier": float("nan"),
+            "n_pos": n_pos,
+            "n_neg": n_neg,
+        }
     auroc = roc_auc_score(y_true, y_prob)
     auprc = average_precision_score(y_true, y_prob)
     brier = brier_score_loss(y_true, y_prob)
     log.info(
         "  %-20s  AUROC=%.3f  AUPRC=%.3f  Brier=%.3f  (pos=%d / %d)",
-        mutation_name, auroc, auprc, brier, n_pos, n_pos + n_neg,
+        mutation_name,
+        auroc,
+        auprc,
+        brier,
+        n_pos,
+        n_pos + n_neg,
     )
-    return {"auroc": auroc, "auprc": auprc, "brier": brier, "n_pos": n_pos, "n_neg": n_neg}
+    return {
+        "auroc": auroc,
+        "auprc": auprc,
+        "brier": brier,
+        "n_pos": n_pos,
+        "n_neg": n_neg,
+    }
 
 
 def evaluate_all(
@@ -80,11 +96,17 @@ def evaluate_all(
     """
     rows = []
     for col in y_true_df.columns:
-        prob_col = f"mutation_prob_{col}" if f"mutation_prob_{col}" in y_prob_df.columns else col
+        prob_col = (
+            f"mutation_prob_{col}"
+            if f"mutation_prob_{col}" in y_prob_df.columns
+            else col
+        )
         if prob_col not in y_prob_df.columns:
             log.warning("No probability column for '%s' — skipping.", col)
             continue
-        metrics = evaluate_classifier(y_true_df[col].values, y_prob_df[prob_col].values, col)
+        metrics = evaluate_classifier(
+            y_true_df[col].values, y_prob_df[prob_col].values, col
+        )
         metrics["mutation"] = col
         rows.append(metrics)
     return pd.DataFrame(rows).set_index("mutation")
@@ -127,7 +149,9 @@ def cross_validate_classifiers(
             clf = classifier_factory()
             clf.fit(Z[train_idx], y[train_idx])
             y_prob = clf.predict_proba(Z[test_idx])[:, 1]
-            metrics = evaluate_classifier(y[test_idx], y_prob, mutation_name=f"{mutation}/fold{fold_idx}")
+            metrics = evaluate_classifier(
+                y[test_idx], y_prob, mutation_name=f"{mutation}/fold{fold_idx}"
+            )
             rows.append({"mutation": mutation, "fold": fold_idx, **metrics})
     return pd.DataFrame(rows)
 

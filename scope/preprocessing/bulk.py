@@ -163,7 +163,9 @@ class BulkNormalizer(BaseEstimator, TransformerMixin):
             mask = (row > 0) & (ref > 0)
             if mask.sum() < 10:
                 continue
-            M = np.log2(row[mask] / lib_sizes[i]) - np.log2(ref[mask] / lib_sizes[ref_idx])
+            M = np.log2(row[mask] / lib_sizes[i]) - np.log2(
+                ref[mask] / lib_sizes[ref_idx]
+            )
             A = 0.5 * (
                 np.log2(row[mask] / lib_sizes[i])
                 + np.log2(ref[mask] / lib_sizes[ref_idx])
@@ -218,9 +220,7 @@ class BulkScaler(BaseEstimator, TransformerMixin):
         X = self._get_X(adata)
         self._scaler = StandardScaler(with_mean=self.center, with_std=self.scale)
         self._scaler.fit(X)
-        log.info(
-            "BulkScaler fitted (center=%s, scale=%s).", self.center, self.scale
-        )
+        log.info("BulkScaler fitted (center=%s, scale=%s).", self.center, self.scale)
         return self
 
     def transform(self, adata: AnnData, y=None) -> AnnData:

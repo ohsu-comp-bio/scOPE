@@ -108,6 +108,7 @@ def check_mutation_labels(
     non_binary = unique_vals - {0, 1}
     if non_binary:
         import warnings
+
         warnings.warn(
             f"'{name}' contains non-binary values: {non_binary}. "
             "Expected 0/1 integer labels.",
@@ -142,9 +143,7 @@ def check_is_fitted(estimator: object, attributes: Sequence[str]) -> None:
     """
     from sklearn.exceptions import NotFittedError
 
-    missing = [
-        attr for attr in attributes if not hasattr(estimator, attr)
-    ]
+    missing = [attr for attr in attributes if not hasattr(estimator, attr)]
     if missing:
         cls_name = type(estimator).__name__
         raise NotFittedError(

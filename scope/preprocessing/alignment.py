@@ -19,9 +19,9 @@ from scope.utils.logging import get_logger
 log = get_logger(__name__)
 
 AlignMethod = Literal[
-    "moment_matching",     # match mean and std of each gene
-    "quantile",            # quantile normalisation to bulk reference
-    "z_score_bulk",        # subtract bulk mean, divide by bulk std
+    "moment_matching",  # match mean and std of each gene
+    "quantile",  # quantile normalisation to bulk reference
+    "z_score_bulk",  # subtract bulk mean, divide by bulk std
     "none",
 ]
 
@@ -84,7 +84,7 @@ class BulkSCAligner(BaseEstimator, TransformerMixin):
             Preprocessed bulk AnnData (samples × genes).
         """
         X_bulk = self._get_X(adata_bulk, self.layer_bulk)
-        self.bulk_mean_ = X_bulk.mean(axis=0)           # (n_genes,)
+        self.bulk_mean_ = X_bulk.mean(axis=0)  # (n_genes,)
         self.bulk_std_ = X_bulk.std(axis=0)
         self.bulk_std_ = np.where(self.bulk_std_ == 0, 1.0, self.bulk_std_)
 
@@ -99,7 +99,9 @@ class BulkSCAligner(BaseEstimator, TransformerMixin):
             self._clip_hi_ = np.percentile(X_bulk, hi, axis=0)
 
         self.n_genes_ = X_bulk.shape[1]
-        log.info("BulkSCAligner fitted (method=%s, n_genes=%d).", self.method, self.n_genes_)
+        log.info(
+            "BulkSCAligner fitted (method=%s, n_genes=%d).", self.method, self.n_genes_
+        )
         return self
 
     def transform(self, adata_sc: AnnData, y=None) -> AnnData:

@@ -29,6 +29,7 @@ class TestBulkPipeline:
         prob_orig = pipe.predict_bulk(adata_bulk)
         prob_load = loaded.predict_bulk(adata_bulk)
         import pandas as pd
+
         pd.testing.assert_frame_equal(prob_orig, prob_load)
 
     def test_cv(self, adata_bulk, mutation_labels):

@@ -110,7 +110,7 @@ class NMFDecomposition(BaseDecomposition):
         )
         self._model.fit(X)
 
-        self.components_ = self._model.components_   # (k, n_genes)
+        self.components_ = self._model.components_  # (k, n_genes)
         self.n_components_ = self.n_components
         # Pseudoinverse of H for projecting new data
         self._H_pinv_ = np.linalg.pinv(self.components_)  # (n_genes, k)
@@ -124,8 +124,8 @@ class NMFDecomposition(BaseDecomposition):
     def transform(self, adata: AnnData, y=None) -> AnnData:
         X = self._get_X(adata)
         X = self._ensure_nonneg(X)
-        Z = X @ self._H_pinv_   # (n_obs, k)
-        Z = np.maximum(Z, 0.0)   # keep non-negative
+        Z = X @ self._H_pinv_  # (n_obs, k)
+        Z = np.maximum(Z, 0.0)  # keep non-negative
         adata = adata.copy()
         adata.obsm[self.obsm_key] = Z.astype(np.float32)
         return adata
