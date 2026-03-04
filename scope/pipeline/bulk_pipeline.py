@@ -16,9 +16,10 @@ Typical usage
 
 from __future__ import annotations
 
+import functools
 import pickle
 from pathlib import Path
-from typing import Union
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -80,13 +81,13 @@ class BulkPipeline(BaseEstimator):
         scale: bool = True,
         decomposition: str = "svd",
         n_components: int = 50,
-        decomposition_kwargs: dict | None = None,
+        decomposition_kwargs: Optional[dict] = None,
         classifier: str = "logistic",
-        classifier_kwargs: dict | None = None,
+        classifier_kwargs: Optional[dict] = None,
         min_positive_frac: float = 0.05,
         scale_features: bool = True,
-        gene_lengths: np.ndarray | None = None,
-        layer: str | None = None,
+        gene_lengths: Optional[np.ndarray] = None,
+        layer: Optional[str] = None,
     ):
         self.norm_method = norm_method
         self.log1p = log1p
@@ -107,8 +108,8 @@ class BulkPipeline(BaseEstimator):
         self,
         adata_bulk: AnnData,
         mutation_labels: pd.DataFrame,
-        cv: int | None = None,
-    ) -> BulkPipeline:
+        cv: Optional[int] = None,
+    ) -> "BulkPipeline":
         """Learn latent space and train mutation classifiers.
 
         Parameters
@@ -178,11 +179,12 @@ class BulkPipeline(BaseEstimator):
         # ── 4. Classifiers ────────────────────────────────────────────────
         log.info("Training classifiers (%s).", self.classifier)
 
-        def _factory():
-            return get_classifier(self.classifier, **self.classifier_kwargs)
+        classifier_factory = functools.partial(
+            get_classifier, self.classifier, **self.classifier_kwargs
+        )
 
         self.classifier_set_ = PerMutationClassifierSet(
-            classifier_factory=_factory,
+            classifier_factory=classifier_factory,
             min_positive_frac=self.min_positive_frac,
             scale_features=self.scale_features,
         )
@@ -192,7 +194,7 @@ class BulkPipeline(BaseEstimator):
         if cv is not None:
             log.info("Running %d-fold cross-validation.", cv)
             self.cv_results_ = cross_validate_classifiers(
-                Z_bulk, mutation_labels, _factory, cv=cv
+                Z_bulk, mutation_labels, classifier_factory, cv=cv
             )
         else:
             self.cv_results_ = None
@@ -249,7 +251,7 @@ class BulkPipeline(BaseEstimator):
         log.info("BulkPipeline saved to '%s'.", path)
 
     @classmethod
-    def load(cls, path: PathLike) -> BulkPipeline:
+    def load(cls, path: PathLike) -> "BulkPipeline":
         """Load a previously saved pipeline.
 
         Parameters

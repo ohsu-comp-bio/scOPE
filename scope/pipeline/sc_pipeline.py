@@ -13,10 +13,11 @@ Typical usage
 
 from __future__ import annotations
 
+from typing import List, Optional, Union
 from pathlib import Path
-from typing import Union
 
 import numpy as np
+import pandas as pd
 from anndata import AnnData
 from sklearn.base import BaseEstimator
 
@@ -68,8 +69,8 @@ class SingleCellPipeline(BaseEstimator):
         sc_min_genes: int = 200,
         sc_target_sum: float = 1e4,
         alignment_method: str = "z_score_bulk",
-        clip_percentile: float | None = 99.0,
-        layer: str | None = None,
+        clip_percentile: Optional[float] = 99.0,
+        layer: Optional[str] = None,
         add_to_obs: bool = True,
     ):
         self.bulk_pipeline = bulk_pipeline
@@ -83,7 +84,7 @@ class SingleCellPipeline(BaseEstimator):
         self.add_to_obs = add_to_obs
 
     # ------------------------------------------------------------------
-    def fit(self, adata_bulk_pp: AnnData, adata_sc: AnnData) -> SingleCellPipeline:
+    def fit(self, adata_bulk_pp: AnnData, adata_sc: AnnData) -> "SingleCellPipeline":
         """Fit sc preprocessing and bulk–sc aligner.
 
         Parameters
@@ -178,7 +179,7 @@ class SingleCellPipeline(BaseEstimator):
             )
             adata_pp = sc_prep.fit_transform(adata_sc)
 
-        # ── 2. Subset to bulk gene universe ───────────────────────────
+        # ── 2. Subset to shared genes and align ───────────────────────
         bulk_genes = bp.gene_names_
         sc_genes = list(adata_pp.var_names)
         shared = [g for g in bulk_genes if g in set(sc_genes)]
@@ -190,31 +191,39 @@ class SingleCellPipeline(BaseEstimator):
                 len(bulk_genes),
             )
 
-        # Re-index sc to exact bulk gene order, zero-filling gaps
+        # Subset sc to shared genes in bulk order for alignment
         import scipy.sparse as sp
+        import anndata as ad
 
+        gene_idx = {g: i for i, g in enumerate(sc_genes)}
         X_sc = adata_pp.X
         if sp.issparse(X_sc):
             X_sc = X_sc.toarray()
-        gene_idx = {g: i for i, g in enumerate(sc_genes)}
-        X_aligned = np.zeros((adata_pp.n_obs, len(bulk_genes)), dtype=np.float32)
-        for j, g in enumerate(bulk_genes):
-            if g in gene_idx:
-                X_aligned[:, j] = X_sc[:, gene_idx[g]]
 
-        import anndata as ad
+        shared_idx_sc = [gene_idx[g] for g in shared]
+        X_shared = X_sc[:, shared_idx_sc].astype(np.float32)
+
+        adata_shared = ad.AnnData(X=X_shared)
+        adata_shared.obs_names = list(adata_pp.obs_names)
+        adata_shared.var_names = shared
+        adata_shared.obs = adata_pp.obs.copy()
+
+        # ── 3. Bulk–SC alignment (on shared genes only) ───────────────
+        if hasattr(self, "aligner_"):
+            adata_shared = self.aligner_.transform(adata_shared)
+            X_shared = adata_shared.X
+            if sp.issparse(X_shared):
+                X_shared = X_shared.toarray()
+
+        # ── 4. Zero-pad to full bulk gene universe ────────────────────
+        X_aligned = np.zeros((adata_pp.n_obs, len(bulk_genes)), dtype=np.float32)
+        shared_idx_bulk = [i for i, g in enumerate(bulk_genes) if g in set(shared)]
+        X_aligned[:, shared_idx_bulk] = X_shared
 
         adata_aligned = ad.AnnData(X=X_aligned)
         adata_aligned.obs_names = list(adata_pp.obs_names)
         adata_aligned.var_names = bulk_genes
-        # Copy obs metadata
         adata_aligned.obs = adata_pp.obs.copy()
-
-        # ── 3. Bulk–SC alignment ───────────────────────────────────────
-        if hasattr(self, "aligner_"):
-            adata_aligned = self.aligner_.transform(adata_aligned)
-
-        # ── 4. Project into bulk latent space ─────────────────────────
         adata_emb = bp.decomposer_.transform(adata_aligned)
         Z_sc = adata_emb.obsm[bp.obsm_key_]
         log.info(
