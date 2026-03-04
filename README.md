@@ -229,6 +229,8 @@ If you use scOPE in your research, please cite:
 > per-cell mutation probabilities in single-cell transcriptomics.
 > *[Journal]* doi: ...
 
+(Work currently in progress - will be filled out later once preprint is up on bioRxiv)
+
 ---
 
 ## License
