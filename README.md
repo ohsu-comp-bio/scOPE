@@ -1,7 +1,7 @@
 # scOPE — single-cell Oncological Prediction Explorer
 
-[![PyPI version](https://badge.fury.io/py/scope-bio.svg)](https://badge.fury.io/py/scope-bio)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![PyPI version](https://img.shields.io/pypi/v/scope-bio?v=0.1.0)](https://pypi.org/project/univi/)
+[![pypi downloads](https://img.shields.io/pepy/dt/scope-bio?label=pypi%20downloads)](https://pepy.tech/project/scope-bio)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 
 <picture>
