@@ -14,6 +14,8 @@ class BaseDecomposition(ABC):
     def __init__(self, n_components: int = 50, layer: str | None = None):
         self.n_components = n_components
         self.layer = layer
+        # Subclasses set this in fit():
+        self.components_: np.ndarray  # (n_components, n_genes)
 
     @abstractmethod
     def fit(self, adata: AnnData, y=None) -> BaseDecomposition:
@@ -26,11 +28,6 @@ class BaseDecomposition(ABC):
     def fit_transform(self, adata: AnnData, y=None) -> AnnData:
         """Fit and immediately transform *adata*."""
         return self.fit(adata, y=y).transform(adata)
-
-    @property
-    def components_(self) -> np.ndarray:
-        """Gene loadings matrix V (genes × components)."""
-        raise NotImplementedError
 
     def _get_X(self, adata: AnnData, layer: str | None = None) -> np.ndarray:
         """Extract the expression matrix as a dense float64 array."""
