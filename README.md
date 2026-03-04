@@ -20,11 +20,11 @@ scOPE proceeds in two phases:
 
 ### 1) Learn latent factors from bulk RNA-seq and train mutation classifiers (Panels a–c)
 
-1. **Bulk expression matrix**  
+i. **Bulk expression matrix**  
    Construct a bulk cohort expression matrix **A_bulk** (rows = patient samples, columns = genes).  
    The bulk matrix is **normalized / centered / scaled** to ensure comparable gene-wise signal.
 
-2. **Latent feature mapping via SVD**  
+ii. **Latent feature mapping via SVD**  
    Decompose the normalized bulk matrix using SVD:
 
    <p align="center">
@@ -51,7 +51,7 @@ scOPE proceeds in two phases:
      </picture>
    </p>
 
-3. **Train mutation-prediction models in latent space**  
+iii. **Train mutation-prediction models in latent space**  
    For each mutation / gene-of-interest, train a supervised ML model to predict mutation presence **Y** from **Z_bulk**.  
    This yields one (or multiple) mutation-specific classifiers operating on the learned latent factors.
 
@@ -59,14 +59,14 @@ scOPE proceeds in two phases:
 
 ### 2) Project scRNA-seq into the bulk-derived latent space and predict mutations per cell (Panels d–f)
 
-4. **Single-cell expression matrix**  
+i. **Single-cell expression matrix**  
    Construct a single-cell expression matrix **A_sc** (rows = single cells, columns = genes).
 
-5. **Normalize scRNA-seq using bulk-derived parameters**  
+ii. **Normalize scRNA-seq using bulk-derived parameters**  
    Apply the *same* gene-wise normalization / centering / scaling learned from the bulk cohort to obtain **A′_sc**.  
    (This alignment step makes the projection comparable across bulk and single-cell.)
 
-6. **Project cells into latent space and infer mutation probabilities**  
+iii. **Project cells into latent space and infer mutation probabilities**  
    Use the bulk-derived gene loadings **V** to compute the single-cell latent representation:
 
    <p align="center">
