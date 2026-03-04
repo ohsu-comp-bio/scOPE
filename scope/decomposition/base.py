@@ -9,11 +9,11 @@ from anndata import AnnData
 
 
 class BaseDecomposition(ABC):
-    """Common interface for SVD, NMF, ICA, and PCA decompositions.
+    """Common interface for SVD, NMF, ICA, and PCA decompositions."""
 
-    All decompositions follow the scikit-learn transformer convention:
-    ``fit`` → ``transform`` → ``fit_transform``.
-    """
+    def __init__(self, n_components: int = 50, layer: str | None = None):
+        self.n_components = n_components
+        self.layer = layer
 
     @abstractmethod
     def fit(self, adata: AnnData, y=None) -> BaseDecomposition:
@@ -33,10 +33,11 @@ class BaseDecomposition(ABC):
         raise NotImplementedError
 
     def _get_X(self, adata: AnnData, layer: str | None = None) -> np.ndarray:
-        """Extract the expression matrix from *adata* as a dense float64 array."""
+        """Extract the expression matrix as a dense float64 array."""
         import scipy.sparse as sp
 
-        X = adata.layers[layer] if layer else adata.X
+        _layer = layer if layer is not None else self.layer
+        X = adata.layers[_layer] if _layer else adata.X
         if sp.issparse(X):
             X = X.toarray()
         return X.astype(np.float64)

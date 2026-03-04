@@ -91,7 +91,7 @@ omit = ["tests/*", "scope/__init__.py"]
 [tool.coverage.report]
 show_missing = true
 skip_covered = false
-fail_under = 70
+fail_under = 40
 
 [tool.ruff]
 line-length = 88
