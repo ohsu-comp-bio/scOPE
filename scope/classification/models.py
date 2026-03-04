@@ -63,15 +63,17 @@ class LogisticMutationClassifier(BaseMutationClassifier):
         self.class_weight = class_weight
         self.random_state = random_state
 
-    # Replace the fit() instantiation:
-    self._model = LogisticRegression(
-        C=self.C,
-        l1_ratio=self.l1_ratio,
-        solver=self.solver,
-        max_iter=self.max_iter,
-        class_weight=self.class_weight,
-        random_state=self.random_state,
-    )
+    def fit(self, Z, y):
+        self._model = LogisticRegression(
+            C=self.C,
+            l1_ratio=self.l1_ratio,
+            solver=self.solver,
+            max_iter=self.max_iter,
+            class_weight=self.class_weight,
+            random_state=self.random_state,
+        )
+        self._model.fit(Z, y)
+        return self
 
     def predict_proba(self, Z: np.ndarray) -> np.ndarray:
         return self._model.predict_proba(Z)
