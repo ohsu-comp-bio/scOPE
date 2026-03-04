@@ -14,9 +14,10 @@ Typical usage
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Union
 
+import anndata as ad
 import numpy as np
+import scipy.sparse as sp
 from anndata import AnnData
 from sklearn.base import BaseEstimator
 
@@ -191,8 +192,6 @@ class SingleCellPipeline(BaseEstimator):
             )
 
         # Subset sc to shared genes in bulk order for alignment
-        import anndata as ad
-        import scipy.sparse as sp
 
         gene_idx = {g: i for i, g in enumerate(sc_genes)}
         X_sc = adata_pp.X
