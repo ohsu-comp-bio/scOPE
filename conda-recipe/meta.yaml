@@ -1,24 +1,23 @@
-{% set name = "scope-bio" %}
-{% set version = "0.1.0" %}
+{% set version = "0.1.1" %}
 
 package:
-  name: {{ name|lower }}
+  name: scope-bio
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  # sha256 will be filled in after first PyPI upload
+  url: https://pypi.io/packages/source/s/scope-bio/scope_bio-{{ version }}.tar.gz
+  sha256: 538b770be9dce916d9757e92a032b42d2f15e9d9242dbb1f76da562dacb68131
 
 build:
-  number: 0
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
 
 requirements:
   host:
     - python >=3.9
-    - pip
     - setuptools >=68
+    - pip
   run:
     - python >=3.9
     - numpy >=1.24
@@ -34,18 +33,18 @@ requirements:
 test:
   imports:
     - scope
-    - scope.pipeline
-    - scope.decomposition
-    - scope.classification
-    - scope.preprocessing
-  requires:
-    - pytest
+    - scope.io
+    - scope.visualization
   commands:
-    - pytest tests/ -x -q
+    - pip check
+  requires:
+    - pip
 
 about:
   home: https://github.com/Ashford-A/scOPE
-  summary: "scOPE: transfer-learning from bulk RNA-seq to infer per-cell mutation probabilities in scRNA-seq"
+  dev_url: https://github.com/Ashford-A/scOPE
+  doc_url: https://github.com/Ashford-A/scOPE#readme
+  summary: 'scOPE: single-cell Oncological Prediction Explorer — transfer-learning from bulk RNA-seq to predict per-cell mutation probabilities in scRNA-seq.'
   license: MIT
   license_file: LICENSE
 
