@@ -66,3 +66,10 @@ saved_models/
 **/.DS_Store
 staged-recipes/
 
+# -------------------------
+# Notebook generated outputs
+# -------------------------
+notebooks/models/
+notebooks/results/
+notebooks/**/*.pdf
+
