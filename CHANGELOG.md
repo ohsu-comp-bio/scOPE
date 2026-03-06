@@ -4,6 +4,42 @@ All notable changes to scOPE are documented here.
 
 ---
 
+## [0.2.0] — 2026-03-05
+
+### Performance
+- `scope/decomposition/base.py` — `_get_X` now returns a sparse matrix when the input is sparse instead of unconditionally calling `.toarray()`; added `_get_X_dense` for callers (e.g. `fit`) that genuinely require a dense array; sparse @ dense matmul in `transform` avoids ever materialising a full dense cell × gene matrix for large sc datasets
+- `scope/pipeline/sc_pipeline.py` — `SingleCellPipeline.transform` now preserves sparsity throughout steps 2–4: gene subsetting uses sparse column slicing, zero-padding uses COO construction, and densification only occurs once immediately before the decomposer projection; previously `.toarray()` was called on the full unsubsetted matrix (e.g. 200k × 26k genes, ~20 GB), causing kernel crashes on large datasets
+
+---
+
+## [0.1.8] — 2026-03-05
+
+### Fixed
+- `scope/evaluation/svd_evaluation.py` — removed leftover unused `import matplotlib` after Agg removal, fixing ruff F401 lint error
+
+---
+
+## [0.1.7] — 2026-03-05
+
+### Fixed
+- `scope/evaluation/svd_evaluation.py` — removed `matplotlib.use("Agg")` backend override that was silently clobbering the matplotlib backend for the entire process when the module was imported, suppressing interactive plot display in Jupyter notebooks
+
+---
+
+## [0.1.6] — 2026-03-05
+
+### Fixed
+- `scope/evaluation/svd_evaluation.py` — restored missing imports (`numpy`, `pandas`, `seaborn`, `scipy`, `sklearn`) that were accidentally dropped during refactoring in v0.1.5
+
+---
+
+## [0.1.5] — 2026-03-05
+
+### Fixed
+- `scope/evaluation/svd_evaluation.py` — replaced `matplotlib.use("Agg")` module-level call with a conditional check (`DISPLAY` env var / OS) to avoid overriding the backend in interactive environments; added `os` import
+
+---
+
 ## [0.1.4] — 2026-03-05
 
 ### Fixed
