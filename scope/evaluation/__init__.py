@@ -5,6 +5,7 @@ from scope.evaluation.metrics import (
     pr_curve_data,
     roc_curve_data,
 )
+from scope.evaluation.svd_evaluation import SVDEvaluator
 
 __all__ = [
     "evaluate_classifier",
@@ -12,4 +13,5 @@ __all__ = [
     "cross_validate_classifiers",
     "roc_curve_data",
     "pr_curve_data",
+    "SVDEvaluator",
 ]

@@ -1,0 +1,80 @@
+# Changelog
+
+All notable changes to scOPE are documented here.
+
+---
+
+## [0.1.2] — 2026-03-05
+
+### Added
+
+**Decomposition**
+- `FactorAnalysisDecomposition` (`decomposition="fa"`) — probabilistic factor analysis via sklearn; models gene-specific noise variance (heteroscedasticity), making it more appropriate than PCA/SVD when technical noise varies widely across genes
+- `ConsensusNMFDecomposition` (`decomposition="cnmf"`) — consensus NMF following Kotliar et al. (eLife 2019); runs NMF `n_iter` times with random initialisations, clusters the resulting components via K-means, and refits with the consensus H matrix fixed; produces substantially more stable and reproducible gene programs than single-run NMF
+- Both new decompositions are registered in `get_decomposition()` and usable as drop-in replacements via the `decomposition=` argument in `BulkPipeline`
+
+**Evaluation**
+- `SVDEvaluator` — comprehensive SVD component interpretation class; takes a fitted `BulkPipeline` and bulk latent embedding and produces 15 diagnostic plots + a tidy gene program CSV:
+  - Classifier-weighted scree plot (`|coef|×σ` colour-coded bars)
+  - Component importance bar chart (ranked; decomposed `|coef|` vs σ)
+  - Hierarchically clustered gene loading heatmap
+  - Per-component signed gene bar charts
+  - Pairwise latent scatter coloured by mutation label
+  - Component score separation violins (Mann-Whitney p-values)
+  - Spearman component–label correlation heatmap (FDR-corrected)
+  - Cross-validated ROC curve + component ablation AUC curve
+  - Permutation test (observed AUROC vs. null distribution)
+  - Gene biplot (sample scores + gene loading arrows)
+  - SHAP dot and bar summaries (optional; requires `shap`)
+  - UMAP of Z_bulk coloured by mutation label (optional; requires `umap-learn`)
+  - Calibration curve (reliability of predicted probabilities)
+  - Component cross-correlation heatmap (flags batch bleed)
+  - `gene_program_table.csv` — tidy export of component rank, σ, `|coef|`, importance, and top gene loadings
+
+**Preprocessing — `BulkPreprocessor`**
+- `already_log_transformed` flag — skips the log1p step when input is already log-normalised (e.g. log2-TPM from GEO)
+- `min_samples_expressed` / `min_expression` — removes lowly expressed genes before fitting
+- `gene_blacklist` — unconditionally excludes specified gene symbols
+- `auto_remove_mito` — removes `MT-` / `mt-` prefixed genes
+- `auto_remove_ribo` — removes `RPS` / `RPL` ribosomal protein genes
+- `run_hvg` / `n_hvg` / `hvg_flavor` — highly variable gene selection via scanpy (falls back to top-variance selection if scanpy unavailable)
+- `batch_key` / `batch_method` — batch correction via ComBat (`pip install combat`) or Harmony (`pip install harmonypy`)
+- All new parameters have defaults that preserve v0.1.1 behavior; fully backward compatible
+
+**Preprocessing — `SingleCellPreprocessor`**
+- `max_genes` — upper bound on detected genes per cell (doublet proxy, complements `max_counts`)
+- `max_mito_pct` — removes cells exceeding a mitochondrial fraction threshold
+- `auto_flag_mito` — annotates `pct_mito` in `adata.obs` even when mito filtering is disabled
+- `run_doublet_detection` / `doublet_threshold` — Scrublet-based doublet scoring and removal (optional; requires `pip install scrublet`)
+- `already_qc_filtered` — skips all cell-level QC filters for pre-filtered inputs
+- `already_normalized` — skips library-size normalisation
+- `already_log_transformed` — skips log1p
+- All new parameters have defaults that preserve v0.1.1 behavior; fully backward compatible
+
+**Documentation**
+- README updated to document all new decomposition methods, preprocessing options, SVDEvaluator usage, output file reference table, and optional dependency table
+
+---
+
+## [0.1.1] — 2026-03-04
+
+### Added
+- Full package codebase groundwork (`scope/` Python package, `pyproject.toml`, `MANIFEST.in`, `LICENSE`)
+- `BulkPipeline` — end-to-end Phase 1: bulk normalisation → SVD/NMF/ICA/PCA decomposition → per-mutation classifier training with optional cross-validation
+- `SingleCellPipeline` — end-to-end Phase 2: sc QC/normalisation → gene alignment → bulk latent projection → per-cell mutation probability inference
+- `BulkPreprocessor` / `BulkNormalizer` / `BulkScaler` — bulk normalisation (CPM, TPM, median-ratio, TMM) and gene-wise centering/scaling
+- `SingleCellPreprocessor` — sc QC filtering and library-size normalisation
+- `BulkSCAligner` — bulk–sc distribution alignment (z-score, moment-matching, quantile)
+- `SVDDecomposition`, `NMFDecomposition`, `ICADecomposition`, `PCADecomposition` with shared `fit` / `transform` / `components_` interface
+- `PerMutationClassifierSet` with logistic, random forest, GBM, XGBoost, LightGBM, SVM, and MLP classifiers
+- `evaluate_classifier`, `evaluate_all`, `cross_validate_classifiers`, `roc_curve_data`, `pr_curve_data`
+- `compute_umap`, `compute_tsne`, `plot_embedding`, `plot_mutation_probabilities`, `plot_scree`, `plot_mutation_heatmap`
+- PyPI release (`pip install scope-bio`) and conda-forge recipe
+- Initial notebooks and test suite
+
+---
+
+## [0.1.0] — 2026-03-03
+
+### Added
+- Initial repository structure, README, and proof-of-concept notebooks

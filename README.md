@@ -1,6 +1,6 @@
 # scOPE — single-cell Oncological Prediction Explorer
 
-[![PyPI version](https://img.shields.io/pypi/v/scope-bio?v=0.1.1)](https://pypi.org/project/scope-bio/)
+[![PyPI version](https://img.shields.io/pypi/v/scope-bio?v=0.1.2)](https://pypi.org/project/scope-bio/)
 [![pypi downloads](https://img.shields.io/pepy/dt/scope-bio?label=pypi%20downloads)](https://pepy.tech/project/scope-bio)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 
@@ -128,7 +128,7 @@ mutation_labels = load_mutation_labels("mutations.csv", sample_col="sample_id")
 
 bulk_pipe = BulkPipeline(
     norm_method="cpm",
-    decomposition="svd",   # "svd" | "nmf" | "ica" | "pca"
+    decomposition="svd",   # "svd" | "nmf" | "ica" | "pca" | "fa" | "cnmf"
     n_components=50,
     classifier="logistic", # "logistic" | "random_forest" | "gbm" | "xgboost" | "lightgbm" | "svm" | "mlp"
 )
@@ -138,7 +138,6 @@ bulk_pipe.save("models/bulk_pipeline.pkl")
 # --- Phase 2: Single cell --------------------------------------------------
 adata_sc = ad.read_h5ad("sc_tumor.h5ad")
 
-# Prepare a preprocessed bulk reference for moment matching
 adata_bulk_pp = bulk_pipe.preprocessor_.transform(adata_bulk)
 
 sc_pipe = SingleCellPipeline(
@@ -160,6 +159,140 @@ fig.savefig("mutation_probs.pdf", bbox_inches="tight")
 
 ---
 
+## Preprocessing options
+
+`BulkPreprocessor` and `SingleCellPreprocessor` are designed to handle the full range of input states — from raw counts to already-normalized matrices — without requiring you to re-implement preprocessing outside the pipeline.
+
+### Bulk: handling already-processed inputs
+
+```python
+bulk_pipe = BulkPipeline(
+    norm_method="none",               # skip library-size normalization
+    log1p=False,                      # data is already log-transformed
+    decomposition="svd",
+    n_components=50,
+)
+
+# Or pass flags directly to BulkPreprocessor:
+from scope.preprocessing import BulkPreprocessor
+
+preprocessor = BulkPreprocessor(
+    norm_method="cpm",
+    log1p=True,
+    already_log_transformed=False,    # set True if input is e.g. log2-TPM from GEO
+    min_samples_expressed=5,          # remove genes expressed in fewer than 5 samples
+    min_expression=0.5,               # expression threshold for the above filter
+    gene_blacklist=["MALAT1", "NEAT1"],
+    auto_remove_mito=True,            # remove MT- genes
+    auto_remove_ribo=True,            # remove RPS/RPL genes
+    run_hvg=True,                     # select highly variable genes (requires scanpy)
+    n_hvg=3000,
+    hvg_flavor="seurat_v3",
+    batch_key="cohort",               # batch correction via obs column
+    batch_method="combat",            # "combat" | "harmony"
+)
+```
+
+### Single-cell: QC, mito filtering, and doublet removal
+
+```python
+from scope.preprocessing import SingleCellPreprocessor
+
+sc_prep = SingleCellPreprocessor(
+    filter_strategy="both",           # "min_counts" | "min_genes" | "both" | "none"
+    min_counts=500,
+    min_genes=300,
+    max_counts=25000,
+    max_genes=6000,                   # upper bound (doublet proxy)
+    max_mito_pct=20.0,                # remove cells with >20% mitochondrial reads
+    auto_flag_mito=True,              # annotate pct_mito in adata.obs regardless
+    run_doublet_detection=True,       # Scrublet-based doublet removal (pip install scrublet)
+    doublet_threshold=None,           # None = automatic Scrublet threshold
+    already_qc_filtered=False,        # True = skip all cell-level filters
+    already_normalized=False,         # True = skip library-size normalization
+    already_log_transformed=False,    # True = skip log1p
+)
+```
+
+---
+
+## Decomposition methods
+
+scOPE supports several latent-space methods, all sharing the same `fit` / `transform` / `components_` interface and usable as a drop-in via the `decomposition=` argument in `BulkPipeline`.
+
+| Key | Class | Notes |
+|---|---|---|
+| `"svd"` | `SVDDecomposition` | Default. Linear, interpretable. Gene loadings V enable direct sc projection. |
+| `"nmf"` | `NMFDecomposition` | Non-negative, additive gene programs (metagenes). Requires non-negative input. |
+| `"ica"` | `ICADecomposition` | Independent components. Useful for finding non-Gaussian expression sources. |
+| `"pca"` | `PCADecomposition` | Standard PCA. Equivalent to SVD on centred data. |
+| `"fa"` | `FactorAnalysisDecomposition` | Probabilistic FA. Accounts for gene-specific noise variance (heteroscedasticity). |
+| `"cnmf"` | `ConsensusNMFDecomposition` | Consensus NMF (Kotliar et al., eLife 2019). Runs NMF *n* times, clusters components for stability. Recommended over single-run NMF for publication. |
+
+```python
+# Consensus NMF example
+bulk_pipe = BulkPipeline(
+    decomposition="cnmf",
+    decomposition_kwargs={"n_iter": 50, "n_components": 20},
+    classifier="logistic",
+)
+
+# Factor Analysis example
+bulk_pipe = BulkPipeline(
+    decomposition="fa",
+    n_components=30,
+    classifier="logistic",
+)
+```
+
+---
+
+## SVD evaluation
+
+When using `decomposition="svd"`, `SVDEvaluator` produces a comprehensive suite of plots and a gene program table that characterize which components drive classification and which genes define them. This is useful for reviewers, manuscript figures, and biological interpretation.
+
+```python
+from scope.evaluation import SVDEvaluator
+
+# After fitting:
+adata_pp = bulk_pipe.transform_bulk(adata_bulk)
+Z_bulk = adata_pp.obsm[bulk_pipe.obsm_key_]
+
+ev = SVDEvaluator(bulk_pipe, Z_bulk, mutation="KRAS")
+ev.run_all(output_dir="figures/svd_eval_KRAS")
+```
+
+`run_all()` saves the following to `output_dir/`:
+
+| Output | Description |
+|---|---|
+| `weighted_scree.png` | Scree plot with bars colour-coded by `\|coef\|×σ` classifier importance |
+| `component_importance.png` | Ranked bar chart of importance; decomposed `\|coef\|` vs σ |
+| `gene_loading_heatmap.png` | Hierarchically clustered heatmap of top gene loadings × top components |
+| `top_genes_per_component.png` | Signed gene bar charts for each top-important component |
+| `latent_scatter.png` | Pairwise scatter of top components coloured by mutation label |
+| `separation_violins.png` | Component score distributions by mutation status + Mann-Whitney p |
+| `component_label_correlation.png` | Spearman ρ heatmap between components and mutation label (FDR-corrected) |
+| `roc_ablation.png` | Cross-validated ROC curve + AUC vs. n_components retained |
+| `permutation_test.png` | Observed AUROC vs. permutation null distribution |
+| `gene_biplot.png` | Sample scores + gene loading arrows for top-2 components |
+| `shap_summary_dot.png` | SHAP dot summary (requires `shap`) |
+| `shap_summary_bar.png` | SHAP bar summary (requires `shap`) |
+| `umap_zbulk.png` | UMAP of Z_bulk coloured by mutation label (requires `umap-learn`) |
+| `calibration_curve.png` | Reliability diagram for predicted mutation probabilities |
+| `component_crosscorr.png` | Pearson correlation among SVD components (flags batch bleed) |
+| `gene_program_table.csv` | Tidy table: component rank, σ, `\|coef\|`, importance, top genes + loadings |
+
+Individual plots can also be called directly:
+
+```python
+ev.plot_weighted_scree(output_dir=Path("figures/"))
+ev.plot_separation_violins(output_dir=Path("figures/"), top_components=12)
+ev.export_gene_program_table(output_dir=Path("figures/"), top_components=10)
+```
+
+---
+
 ## API reference
 
 ### Preprocessing
@@ -167,8 +300,8 @@ fig.savefig("mutation_probs.pdf", bbox_inches="tight")
 |---|---|
 | `BulkNormalizer` | CPM / TPM / median-ratio / TMM normalisation |
 | `BulkScaler` | Gene-wise centering and scaling |
-| `BulkPreprocessor` | Combined normalise + scale |
-| `SingleCellPreprocessor` | QC filter + normalise + optional scale |
+| `BulkPreprocessor` | Combined normalise + scale, with gene filtering, HVG, and batch correction |
+| `SingleCellPreprocessor` | QC filter + mito filter + doublet removal + normalise + optional scale |
 | `BulkSCAligner` | z-score / moment-matching / quantile alignment |
 
 ### Decomposition
@@ -178,6 +311,8 @@ fig.savefig("mutation_probs.pdf", bbox_inches="tight")
 | `NMFDecomposition` | Non-negative matrix factorization |
 | `ICADecomposition` | FastICA |
 | `PCADecomposition` | PCA via sklearn |
+| `FactorAnalysisDecomposition` | Probabilistic factor analysis (heteroscedastic noise) |
+| `ConsensusNMFDecomposition` | Consensus NMF for stable gene program discovery |
 | `get_decomposition(name)` | Factory function |
 
 ### Classification
@@ -194,8 +329,9 @@ fig.savefig("mutation_probs.pdf", bbox_inches="tight")
 | `get_classifier(name)` | Factory function |
 
 ### Evaluation
-| Function | Description |
+| Class / Function | Description |
 |---|---|
+| `SVDEvaluator` | Full SVD component interpretation suite (15 plots + gene program CSV) |
 | `evaluate_classifier` | AUROC, AUPRC, Brier score |
 | `evaluate_all` | Evaluate all mutations at once |
 | `cross_validate_classifiers` | Stratified k-fold CV |
@@ -210,6 +346,21 @@ fig.savefig("mutation_probs.pdf", bbox_inches="tight")
 | `plot_mutation_probabilities` | Grid of per-mutation probability overlays |
 | `plot_scree` | Singular value / EVR scree plot |
 | `plot_mutation_heatmap` | Mean probability per cluster heatmap |
+
+---
+
+## Optional dependencies
+
+| Package | Purpose | Install |
+|---|---|---|
+| `umap-learn` | UMAP embeddings and SVDEvaluator UMAP plot | `pip install scope-bio[full]` |
+| `shap` | SHAP component importance in SVDEvaluator | `pip install scope-bio[full]` |
+| `xgboost` | XGBoost classifier | `pip install scope-bio[full]` |
+| `lightgbm` | LightGBM classifier | `pip install scope-bio[full]` |
+| `scrublet` | Doublet detection in SingleCellPreprocessor | `pip install scrublet` |
+| `combat` | ComBat batch correction in BulkPreprocessor | `pip install combat` |
+| `harmonypy` | Harmony batch correction in BulkPreprocessor | `pip install harmonypy` |
+| `statsmodels` | FDR correction in SVDEvaluator correlation heatmap | `pip install statsmodels` |
 
 ---
 
