@@ -24,7 +24,6 @@ import contextlib
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
