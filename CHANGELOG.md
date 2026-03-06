@@ -4,6 +4,16 @@ All notable changes to scOPE are documented here.
 
 ---
 
+## [0.1.3] — 2026-03-05
+
+### Fixed
+- `scope/decomposition/cnmf.py` — renamed unused loop variable `i` → `_i` (ruff B007)
+- `scope/evaluation/svd_evaluation.py` — removed unused imports (`warnings`, `Optional`, `Sequence`, `roc_curve`); removed unused `bars` variable assignment; replaced `try/except/pass` with `contextlib.suppress`; rewrote `dict()` call as a dict literal; fixed import sort order (ruff F401, F841, SIM105, C408, I001, UP035)
+- `scope/preprocessing/bulk.py` — removed unused `List` and `Optional` imports; replaced `import scanpy as _sc` availability check with `importlib.util.find_spec`; fixed yoda condition; scanpy now imported inline where used (ruff F401, UP035, SIM300)
+- `scope/preprocessing/single_cell.py` — removed unused `Optional` import (ruff F401)
+
+---
+
 ## [0.1.2] — 2026-03-05
 
 ### Added
