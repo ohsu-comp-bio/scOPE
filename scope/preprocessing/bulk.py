@@ -528,7 +528,8 @@ class BulkPreprocessor(BaseEstimator, TransformerMixin):
             mask[idx] = True
             return mask
 
-        import scanpy as sc        adata_tmp = adata.copy()
+        import scanpy as sc
+        adata_tmp = adata.copy()
         sc.pp.highly_variable_genes(
             adata_tmp, n_top_genes=self.n_hvg, flavor=self.hvg_flavor
         )

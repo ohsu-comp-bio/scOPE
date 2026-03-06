@@ -24,7 +24,6 @@ import contextlib
 from pathlib import Path
 
 import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -34,6 +33,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold, permutation_test_score
 from sklearn.pipeline import Pipeline
+
+matplotlib.use("Agg")
 
 from scope.decomposition.svd import SVDDecomposition
 from scope.evaluation.metrics import roc_curve_data
