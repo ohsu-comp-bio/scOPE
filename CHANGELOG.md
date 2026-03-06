@@ -4,6 +4,15 @@ All notable changes to scOPE are documented here.
 
 ---
 
+## [0.1.4] — 2026-03-05
+
+### Fixed
+- `scope/evaluation/svd_evaluation.py` — `SVDEvaluator._extract_coef` now
+  correctly unwraps `_SklearnWrapper` (scope's internal classifier wrapper)
+  before extracting `coef_`, fixing `AttributeError` on initialization
+
+---
+
 ## [0.1.3] — 2026-03-05
 
 ### Fixed
