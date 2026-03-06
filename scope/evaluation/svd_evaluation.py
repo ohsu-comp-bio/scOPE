@@ -21,15 +21,10 @@ Typical usage
 from __future__ import annotations
 
 import contextlib
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import matplotlib
-
-if not os.environ.get("DISPLAY") and os.name != "nt":
-    matplotlib.use("Agg")
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
