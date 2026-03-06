@@ -17,7 +17,7 @@ Changes from v0.1.1
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 import numpy as np
 import scipy.sparse as sp

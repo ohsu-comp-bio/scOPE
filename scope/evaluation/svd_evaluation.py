@@ -20,9 +20,8 @@ Typical usage
 
 from __future__ import annotations
 
-import warnings
+import contextlib
 from pathlib import Path
-from typing import Optional, Sequence
 
 import matplotlib
 matplotlib.use("Agg")
@@ -32,7 +31,7 @@ import pandas as pd
 import seaborn as sns
 from scipy import stats
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score, roc_curve
+from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold, permutation_test_score
 from sklearn.pipeline import Pipeline
 
@@ -208,7 +207,7 @@ class SVDEvaluator:
 
         fig, ax1 = plt.subplots(figsize=(11, 4))
         cmap = plt.cm.RdYlBu_r
-        bars = ax1.bar(
+        ax1.bar(
             np.arange(1, k + 1),
             evr * 100,
             color=cmap(imp_norm),
@@ -518,12 +517,10 @@ class SVDEvaluator:
                 clf = LogisticRegression(max_iter=1000, random_state=42)
                 clf.fit(Z_sub[tr], self.y[tr])
                 p = clf.predict_proba(Z_sub[te])
-                try:
+                with contextlib.suppress(Exception):
                     fold_aucs.append(
                         roc_auc_score(self.y[te], p[:, 1] if p.shape[1] == 2 else p.max(1))
                     )
-                except Exception:
-                    pass
             abl_aucs.append(float(np.nanmean(fold_aucs)) if fold_aucs else np.nan)
             abl_n.append(n_keep)
 
@@ -609,7 +606,7 @@ class SVDEvaluator:
                 "",
                 xy=(vx, vy),
                 xytext=(0, 0),
-                arrowprops=dict(arrowstyle="->", color="grey", lw=0.7),
+                arrowprops={"arrowstyle": "->", "color": "grey", "lw": 0.7},
             )
             ax.text(vx * 1.06, vy * 1.06, self.gene_names[i],
                     fontsize=7, color="dimgray", ha="center")

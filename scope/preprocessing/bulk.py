@@ -17,7 +17,7 @@ Changes from v0.1.1
 
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+from typing import Literal
 
 import numpy as np
 import scipy.sparse as sp
@@ -33,9 +33,9 @@ log = get_logger(__name__)
 # Optional deps
 # ---------------------------------------------------------------------------
 try:
-    import scanpy as _sc
-    _HAS_SCANPY = True
-except ImportError:
+    import importlib.util as _ilu
+    _HAS_SCANPY = _ilu.find_spec("scanpy") is not None
+except Exception:
     _HAS_SCANPY = False
 
 try:
@@ -453,7 +453,7 @@ class BulkPreprocessor(BaseEstimator, TransformerMixin):
         # Expression filter
         if self.min_samples_expressed > 0:
             X = self._raw_X(adata)
-            expressed = (X > self.min_expression).sum(axis=0)
+            expressed = (self.min_expression < X).sum(axis=0)
             mask &= expressed >= self.min_samples_expressed
 
         n_removed = (~mask).sum()
@@ -528,8 +528,7 @@ class BulkPreprocessor(BaseEstimator, TransformerMixin):
             mask[idx] = True
             return mask
 
-        import scanpy as sc
-        adata_tmp = adata.copy()
+        import scanpy as sc        adata_tmp = adata.copy()
         sc.pp.highly_variable_genes(
             adata_tmp, n_top_genes=self.n_hvg, flavor=self.hvg_flavor
         )

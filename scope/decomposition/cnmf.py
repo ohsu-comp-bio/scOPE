@@ -92,7 +92,7 @@ class ConsensusNMFDecomposition(BaseDecomposition):
         log.info(
             "cNMF: running %d NMF iterations (k=%d)...", self.n_iter, self.n_components
         )
-        for i in range(self.n_iter):
+        for _i in range(self.n_iter):
             seed = int(rng.integers(0, 2**31))
             nmf = NMF(
                 n_components=self.n_components,
