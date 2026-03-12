@@ -2,6 +2,8 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/scope-bio?v=0.2.0)](https://pypi.org/project/scope-bio/)
 [![pypi downloads](https://img.shields.io/pepy/dt/scope-bio?label=pypi%20downloads)](https://pepy.tech/project/scope-bio)
+[![Conda version](https://img.shields.io/conda/vn/conda-forge/scope-bio?cacheSeconds=300)](https://anaconda.org/conda-forge/scope-bio)
+[![conda-forge downloads](https://img.shields.io/conda/dn/conda-forge/scope-bio?label=conda-forge%20downloads&cacheSeconds=300)](https://anaconda.org/conda-forge/scope-bio)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 
 <picture>
