@@ -376,13 +376,21 @@ pytest tests/ -v --cov=scope --cov-report=term-missing
 
 ## Citation
 
+A bioRxiv preprint describing scOPE has been submitted and is awaiting posting.
+
 If you use scOPE in your research, please cite:
 
-> Ashford, A. et al. (2024). scOPE: transfer-learning from bulk RNA-seq to infer
-> per-cell mutation probabilities in single-cell transcriptomics.
-> *[Journal]* doi: ...
+> Ashford, A. J., Lapadat, A., and Demir, E. (2026). **scOPE identifies which driver-associated expression programs transfer from bulk tumors to single cells.** *bioRxiv*. Manuscript BIORXIV/2026/740598. DOI pending.
 
-(Work currently in progress - will be filled out later once preprint is up on bioRxiv)
+```bibtex
+@article{Ashford2026scOPE,
+  title   = {{scOPE} identifies which driver-associated expression programs transfer from bulk tumors to single cells},
+  author  = {Ashford, Andrew J. and Lapadat, Alex and Demir, Emek},
+  journal = {bioRxiv},
+  year    = {2026},
+  note    = {Manuscript BIORXIV/2026/740598; DOI pending}
+}
+```
 
 ---
 
