@@ -43,127 +43,154 @@ Across the manuscript audit, transfer was empirically selective: 158 driver–ca
 
 ## Mathematical formulation
 
+### Notation
+
+| Symbol | Meaning |
+|---|---|
+| `c` | cancer type |
+| `d` | driver gene or alteration |
+| `i` | tumor sample or single cell, depending on context |
+| `k` | latent dimensionality; the manuscript analysis used `k = 30` |
+| `V_c,k` | frozen bulk-derived gene-loading matrix |
+| `β_d`, `α_d` | frozen driver-specific classifier parameters |
+
 ### 1. Learn a cancer-specific representation in bulk
 
-For cancer type $c$, let
+For cancer type `c`, the bulk expression matrix contains `n_c` tumors and `p_c` genes:
 
-$$
-X^{\mathrm{bulk}}_c \in \mathbb{R}^{n_c \times p_c}
-$$
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/equations/bulk_shape_dark.png">
+    <img src="assets/equations/bulk_shape_light.png" alt="X bulk c is an n c by p c real-valued matrix" width="500">
+  </picture>
+</p>
 
-be the bulk expression matrix with tumors as rows and genes as columns. After fitting the bulk preprocessing transform, the standardized matrix $\widetilde{X}^{\mathrm{bulk}}_c$ is factorized using a rank-$k$ truncated singular value decomposition:
+After fitting the bulk preprocessing transform, scOPE factorizes the standardized matrix with a rank-`k` truncated SVD:
 
-$$
-\widetilde{X}^{\mathrm{bulk}}_c
-\approx
-U_{c,k}\Sigma_{c,k}V_{c,k}^{\top},
-\qquad
-Z^{\mathrm{bulk}}_c
-=
-\widetilde{X}^{\mathrm{bulk}}_cV_{c,k}
-=
-U_{c,k}\Sigma_{c,k}.
-$$
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/equations/bulk_svd_dark.png">
+    <img src="assets/equations/bulk_svd_light.png" alt="Standardized bulk expression is approximated by U Sigma V transpose" width="760">
+  </picture>
+</p>
 
-Here:
+The tumor-level latent representation is obtained by projecting onto the bulk gene-loading axes:
 
-- $V_{c,k} \in \mathbb{R}^{p_c \times k}$ contains the **bulk-derived gene-loading axes**;
-- $Z^{\mathrm{bulk}}_c \in \mathbb{R}^{n_c \times k}$ is the **tumor-by-factor latent representation**;
-- each latent factor is a weighted expression program shared across tumors rather than a single-gene marker.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/equations/bulk_latent_dark.png">
+    <img src="assets/equations/bulk_latent_light.png" alt="Z bulk equals standardized X bulk times V and equals U Sigma" width="760">
+  </picture>
+</p>
 
-The manuscript analysis used $k=30$, while the package exposes the latent dimension as a user-configurable parameter.
+`V_c,k` contains the **bulk-derived gene-loading axes**, while `Z_bulk,c` is the **tumor-by-factor representation**. Each factor is a weighted multigene expression axis rather than a single-gene marker.
 
-### 2. Learn one driver model in the latent space
+### 2. Learn one driver model in the bulk latent space
 
-For driver $d$, the default logistic model learns coefficients $\beta_d$ from the bulk latent representation and matched tumor-level mutation labels. For tumor $i$:
+For each driver `d`, the default logistic model learns a multicomponent expression program from matched tumor-level mutation labels:
 
-$$
-\widehat{p}^{\mathrm{bulk}}_{id}
-=
-\sigma\!\left(\alpha_d + {z}^{\mathrm{bulk}\top}_{i}\beta_d\right),
-\qquad
-\sigma(a)=\frac{1}{1+e^{-a}}.
-$$
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/equations/bulk_model_dark.png">
+    <img src="assets/equations/bulk_model_light.png" alt="Bulk driver probability equals sigmoid of intercept plus latent factors times driver coefficients" width="1000">
+  </picture>
+</p>
 
-This model captures a **multicomponent expression program associated with driver status**. Bulk performance is evaluated out of fold; the full pipeline—preprocessing, SVD, and driver fitting—is refit within each training fold so held-out tumors do not influence their own predictions.
+Bulk performance is evaluated out of fold. Preprocessing, SVD, and driver fitting are repeated within each training fold so held-out tumors do not influence their own predictions.
 
 ### 3. Transfer the frozen representation into single cells
 
-Let $X^{\mathrm{sc}}_c \in \mathbb{R}^{m_c \times p^{\mathrm{sc}}_c}$ denote a single-cell expression matrix from the same cancer type. scOPE matches genes to the fitted bulk feature space and applies a label-free alignment transform, yielding $X^{\mathrm{sc,align}}_c$.
+For the same cancer type, let the single-cell matrix contain `m_c` cells and `p_sc,c` measured genes:
 
-The single cells are then projected through the **unchanged bulk loadings**:
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/equations/sc_shape_dark.png">
+    <img src="assets/equations/sc_shape_light.png" alt="X single cell c is an m c by p single cell c real-valued matrix" width="520">
+  </picture>
+</p>
 
-$$
-Z^{\mathrm{sc}}_c
-=
-X^{\mathrm{sc,align}}_cV_{c,k}.
-$$
+scOPE gene-matches the target cohort to the fitted bulk feature space and applies the selected label-free alignment transform. The aligned cells are then projected through the **unchanged bulk loadings**:
 
-The **unchanged bulk driver model** is applied directly to each projected cell:
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/equations/sc_projection_dark.png">
+    <img src="assets/equations/sc_projection_light.png" alt="Z single cell equals aligned X single cell times the frozen bulk loading matrix V" width="680">
+  </picture>
+</p>
 
-$$
-s_{id}
-=
-\sigma\!\left(\alpha_d + {z}^{\mathrm{sc}\top}_{i}\beta_d\right).
-$$
+The **unchanged bulk driver classifier** is then applied to every projected cell:
 
-That fixed reuse of $V_{c,k}$, $\alpha_d$, and $\beta_d$ is the transfer-learning step. The single-cell cohort is projected into the bulk-derived coordinate system; the coordinate system is not relearned around the target data.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/equations/sc_score_dark.png">
+    <img src="assets/equations/sc_score_light.png" alt="Cell driver-program score equals sigmoid of the frozen bulk classifier applied to the projected cell" width="830">
+  </picture>
+</p>
+
+This fixed reuse of `V_c,k`, `alpha_d`, and `beta_d` is the transfer-learning step. The target cells enter the bulk-derived coordinate system; the coordinate system is not relearned around the single-cell cohort. The canonical analysis used label-free moment matching while leaving the bulk SVD loadings and classifier parameters fixed.
 
 ### 4. Interpret the score correctly
 
-The raw score $s_{id}$ is best read as:
+The raw score `s_i,d` answers:
 
-> **How strongly does cell $i$ express the bulk-derived transcriptional program associated with driver $d$?**
+> **How strongly does cell `i` express the bulk-derived transcriptional program associated with driver `d`?**
 
-It is **not automatically equivalent to** $P(\text{cell } i \text{ carries driver } d)$ because bulk labels can also encode lineage, purity, molecular subtype, co-mutation, or cohort composition. The manuscript therefore treats scOPE as a discovery and prioritization framework for mutation-associated phenotypes, with explicit guardrails for withholding interpretation when transfer evidence is weak.
+It is **not automatically** the probability that the cell carries the mutation. Bulk mutation labels can also encode lineage, tumor purity, molecular subtype, co-mutation, or cohort composition. scOPE therefore uses an evidence ladder and supports abstention when transfer evidence is weak.
+
+### 5. Manuscript interpretation layers
 
 <details>
-<summary><strong>Manuscript interpretation layer: cell-state residualization</strong></summary>
+<summary><strong>Cell-state residualization</strong></summary>
 
-Raw transferred scores can be elevated in healthy cells when a bulk program captures lineage structure shared across assays. For driver $d$, cell $i$, canonical cell state $g(i)$, and cohort-specific healthy reference set $R_c$, the manuscript computes a cell-state-residual score:
+Raw transferred scores can be elevated in healthy cells when a bulk program captures lineage structure shared across assays. The manuscript subtracts the matched healthy-reference median for the cell's canonical state:
 
-$$
-r_{id}
-=
-s_{id}
--
-\operatorname{median}\left\{s_{jd}:j\in R_c,\ g(j)=g(i)\right\}.
-$$
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/equations/residual_dark.png">
+    <img src="assets/equations/residual_light.png" alt="Residual score equals raw score minus the median score among matched healthy reference cells in the same cell state" width="1000">
+  </picture>
+</p>
 
-When fewer than 25 same-state reference cells are available, the cohort-wide reference median is used instead. Positive residual values indicate activity above the matched healthy-reference baseline for that cellular state; they still do not constitute an allele call.
+When fewer than 25 same-state reference cells are available, the cohort-wide reference median is used instead. A positive residual indicates program activity above the matched reference baseline; it still does not constitute an allele call.
 
 </details>
 
 <details>
-<summary><strong>Manuscript interpretation layer: ground-truth-free transfer confidence</strong></summary>
+<summary><strong>Ground-truth-free transfer confidence</strong></summary>
 
-For each driver, the manuscript combines four label-free properties:
+The manuscript combines four label-free properties: bulk transferability (`T`), spatial coherence (`S`), score concentration (`C`), and agreement with an expression-derived CNV axis (`X`).
 
-$$
-T_d=\max\!\left[0.05,\min\!\left(1,2(\operatorname{AUROC}^{\mathrm{bulk}}_d-0.5)\right)\right],
-$$
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/equations/confidence_t_dark.png">
+    <img src="assets/equations/confidence_t_light.png" alt="Transferability component derived from bulk AUROC" width="900">
+  </picture>
+</p>
 
-$$
-S_d=\operatorname{clip}(\operatorname{MoranI}_d,0,1),\qquad
-C_d=\operatorname{clip}(\operatorname{Gini}_d,0,1),
-$$
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/equations/confidence_sc_dark.png">
+    <img src="assets/equations/confidence_sc_light.png" alt="Spatial coherence and score concentration components" width="900">
+  </picture>
+</p>
 
-$$
-X_d=\operatorname{clip}\!\left(2(\operatorname{AUROC}^{\mathrm{CNV}}_d-0.5),0,1\right).
-$$
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/equations/confidence_x_dark.png">
+    <img src="assets/equations/confidence_x_light.png" alt="CNV agreement component derived from CNV AUROC" width="820">
+  </picture>
+</p>
 
-Here, **$T$** measures bulk transferability, **$S$** spatial coherence on the single-cell expression-neighbor graph, **$C$** score concentration across cells, and **$X$** agreement with an independently inferred expression-derived CNV label. Available components are combined using a weighted geometric mean:
+Available components are combined with a weighted geometric mean:
 
-$$
-\operatorname{confidence}_d
-=
-\exp\!\left[
-\frac{\sum_q w_q\log\!\left(\max(c_{dq},0.05)\right)}
-{\sum_q w_q}
-\right],
-$$
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/equations/confidence_composite_dark.png">
+    <img src="assets/equations/confidence_composite_light.png" alt="Composite confidence is a weighted geometric mean of available evidence components" width="1000">
+  </picture>
+</p>
 
-with manuscript weights $w_T=1$, $w_S=1.5$, $w_C=1$, and $w_X=1$. Confidence is a **triage and abstention signal**, not a posterior genotype probability.
+The manuscript weights are `w_T = 1`, `w_S = 1.5`, `w_C = 1`, and `w_X = 1`. Confidence is a **triage and abstention signal**, not a posterior genotype probability.
 
 </details>
 
