@@ -6,85 +6,176 @@
 [![conda-forge downloads](https://img.shields.io/conda/dn/conda-forge/scope-bio?label=conda-forge%20downloads&cacheSeconds=300)](https://anaconda.org/conda-forge/scope-bio)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 
+**Transfer driver-associated transcriptional programs from genotype-rich bulk tumors into single-cell RNA-seq—without refitting the target cohort.**
+
+Bulk tumor cohorts provide matched genotype and expression across hundreds of patients, but collapse every cell into one profile. Single-cell RNA-seq resolves cellular heterogeneity, but usually cannot observe somatic genotype reliably in each cell. **scOPE bridges those complementary measurement regimes.** For each cancer type, it learns driver-associated expression structure in bulk RNA-seq, freezes the fitted feature map and driver models, and projects gene-matched single cells through that same map.
+
+> [!IMPORTANT]
+> **scOPE does not call mutant alleles.** A scOPE score ranks cells by similarity to a bulk-derived, driver-associated transcriptional program. It is evidence about phenotype—not proof that an individual cell carries the mutation.
+
 <picture>
   <source media="(prefers-color-scheme: dark)"
           srcset="https://raw.githubusercontent.com/Ashford-A/scOPE/main/assets/figures/scOPE_overview_dark.png">
   <img src="https://raw.githubusercontent.com/Ashford-A/scOPE/main/assets/figures/scOPE_overview_light.png"
-       alt="scOPE transfer-learning method overview"
+       alt="scOPE bulk-to-single-cell transfer-learning framework"
        width="100%">
 </picture>
 
 ---
 
-## scOPE workflow (transfer learning from bulk → single-cell)
+## Framework at a glance
 
-scOPE is a transfer-learning framework that uses *bulk RNA-seq cohorts with known mutation status* to learn a compact, biologically meaningful latent space, then projects *single-cell RNA-seq* into that same space to predict the probability that **specific cancer-associated gene mutations** are present in individual cells. This provides mutation-informed subclonal structure that can complement CNV methods and increase subclonal granularity.
+scOPE separates **learning**, **transfer**, and **interpretation**:
 
-### Overview
+1. **Learn in bulk.** Build a cancer-specific latent representation from bulk RNA-seq with matched driver labels, then train one supervised model per driver.
+2. **Freeze the transfer map.** Preserve the fitted gene order, preprocessing parameters, latent loadings, and classifier parameters.
+3. **Project single cells.** Gene-match and align scRNA-seq to the bulk reference, then map every cell into the fixed bulk-derived latent space—without using single-cell mutation labels or refitting the latent axes.
+4. **Score driver-associated programs.** Apply each frozen driver model to each projected cell to obtain a continuous program score.
+5. **Decide whether to trust the transfer.** The manuscript framework evaluates held-out bulk performance, label-free transfer confidence, direct mutation-transcript support where available, patient-level aggregation, longitudinal behavior, cell-state localization, CNV concordance, and negative controls.
 
-scOPE proceeds in two phases:
+The central question is therefore not *“Can expression predict every mutation?”* It is:
 
-### 1) Learn latent factors from bulk RNA-seq and train mutation classifiers (Panels a–c)
+> **Which driver-associated expression programs are reproducible enough in bulk to survive transfer into single cells—and where do those programs localize once transferred?**
 
-- **i. Bulk expression matrix**  
-  Construct a bulk cohort expression matrix **A_bulk** (rows = patient samples, columns = genes).  
-  The bulk matrix is **normalized / centered / scaled** to ensure comparable gene-wise signal.
-
-- **ii. Latent feature mapping via SVD**  
-  Decompose the normalized bulk matrix using SVD:
-
-  <p align="center">
-    <picture>
-      <source media="(prefers-color-scheme: dark)"
-              srcset="https://latex.codecogs.com/svg.image?\color{white}{A_{\text{bulk}}=U_{\text{bulk}}\Sigma_{\text{bulk}}V^{\top}}">
-      <img src="https://latex.codecogs.com/svg.image?A_{\text{bulk}}=U_{\text{bulk}}\Sigma_{\text{bulk}}V^{\top}"
-           alt="A_bulk = U_bulk Σ_bulk V^T">
-    </picture>
-  </p>
-
-  - **U_bulk**: sample scores (rows = patients, columns = latent factors)  
-  - **Σ_bulk**: diagonal matrix of singular values  
-  - **V**: gene loadings (rows = genes, columns = latent factors)
-
-  Define the bulk latent representation (patient-by-factor embedding):
-
-  <p align="center">
-    <picture>
-      <source media="(prefers-color-scheme: dark)"
-              srcset="https://latex.codecogs.com/svg.image?\color{white}{Z_{\text{bulk}}=U_{\text{bulk}}\Sigma_{\text{bulk}}}">
-      <img src="https://latex.codecogs.com/svg.image?Z_{\text{bulk}}=U_{\text{bulk}}\Sigma_{\text{bulk}}"
-           alt="Z_bulk = U_bulk Σ_bulk">
-    </picture>
-  </p>
-
-- **iii. Train mutation-prediction models in latent space**  
-  For each mutation / gene-of-interest, train a supervised ML model to predict mutation presence **Y** from **Z_bulk**.  
-  This yields one (or multiple) mutation-specific classifiers operating on the learned latent factors.
+Across the manuscript audit, transfer was empirically selective: 158 driver–cancer models were attempted across seven malignancies, 102 met predefined claim-safety criteria, and only 11 reached out-of-fold AUROC ≥ 0.90. scOPE is designed to expose that selectivity rather than hide it.
 
 ---
 
-### 2) Project scRNA-seq into the bulk-derived latent space and predict mutations per cell (Panels d–f)
+## Mathematical formulation
 
-- **i. Single-cell expression matrix**  
-  Construct a single-cell expression matrix **A_sc** (rows = single cells, columns = genes).
+### 1. Learn a cancer-specific representation in bulk
 
-- **ii. Normalize scRNA-seq using bulk-derived parameters**  
-  Apply the *same* gene-wise normalization / centering / scaling learned from the bulk cohort to obtain **A′_sc**.  
-  (This alignment step makes the projection comparable across bulk and single-cell.)
+For cancer type $c$, let
 
-- **iii. Project cells into latent space and infer mutation probabilities**  
-  Use the bulk-derived gene loadings **V** to compute the single-cell latent representation:
+$$
+X^{\mathrm{bulk}}_c \in \mathbb{R}^{n_c \times p_c}
+$$
 
-  <p align="center">
-    <picture>
-      <source media="(prefers-color-scheme: dark)"
-              srcset="https://latex.codecogs.com/svg.image?\color{white}{Z_{\text{sc}}=A'_{\text{sc}}V}">
-      <img src="https://latex.codecogs.com/svg.image?Z_{\text{sc}}=A'_{\text{sc}}V"
-           alt="Z_sc = A'_sc V">
-    </picture>
-  </p>
+be the bulk expression matrix with tumors as rows and genes as columns. After fitting the bulk preprocessing transform, the standardized matrix $\widetilde{X}^{\mathrm{bulk}}_c$ is factorized using a rank-$k$ truncated singular value decomposition:
 
-  Then apply the trained bulk models to **Z_sc** to predict **per-cell mutation probabilities**, producing mutation-informed cellular maps that can be analyzed alongside expression programs, clusters, and CNV signals.
+$$
+\widetilde{X}^{\mathrm{bulk}}_c
+\approx
+U_{c,k}\Sigma_{c,k}V_{c,k}^{\top},
+\qquad
+Z^{\mathrm{bulk}}_c
+=
+\widetilde{X}^{\mathrm{bulk}}_cV_{c,k}
+=
+U_{c,k}\Sigma_{c,k}.
+$$
+
+Here:
+
+- $V_{c,k} \in \mathbb{R}^{p_c \times k}$ contains the **bulk-derived gene-loading axes**;
+- $Z^{\mathrm{bulk}}_c \in \mathbb{R}^{n_c \times k}$ is the **tumor-by-factor latent representation**;
+- each latent factor is a weighted expression program shared across tumors rather than a single-gene marker.
+
+The manuscript analysis used $k=30$, while the package exposes the latent dimension as a user-configurable parameter.
+
+### 2. Learn one driver model in the latent space
+
+For driver $d$, the default logistic model learns coefficients $\beta_d$ from the bulk latent representation and matched tumor-level mutation labels. For tumor $i$:
+
+$$
+\widehat{p}^{\mathrm{bulk}}_{id}
+=
+\sigma\!\left(\alpha_d + {z}^{\mathrm{bulk}\top}_{i}\beta_d\right),
+\qquad
+\sigma(a)=\frac{1}{1+e^{-a}}.
+$$
+
+This model captures a **multicomponent expression program associated with driver status**. Bulk performance is evaluated out of fold; the full pipeline—preprocessing, SVD, and driver fitting—is refit within each training fold so held-out tumors do not influence their own predictions.
+
+### 3. Transfer the frozen representation into single cells
+
+Let $X^{\mathrm{sc}}_c \in \mathbb{R}^{m_c \times p^{\mathrm{sc}}_c}$ denote a single-cell expression matrix from the same cancer type. scOPE matches genes to the fitted bulk feature space and applies a label-free alignment transform, yielding $X^{\mathrm{sc,align}}_c$.
+
+The single cells are then projected through the **unchanged bulk loadings**:
+
+$$
+Z^{\mathrm{sc}}_c
+=
+X^{\mathrm{sc,align}}_cV_{c,k}.
+$$
+
+The **unchanged bulk driver model** is applied directly to each projected cell:
+
+$$
+s_{id}
+=
+\sigma\!\left(\alpha_d + {z}^{\mathrm{sc}\top}_{i}\beta_d\right).
+$$
+
+That fixed reuse of $V_{c,k}$, $\alpha_d$, and $\beta_d$ is the transfer-learning step. The single-cell cohort is projected into the bulk-derived coordinate system; the coordinate system is not relearned around the target data.
+
+### 4. Interpret the score correctly
+
+The raw score $s_{id}$ is best read as:
+
+> **How strongly does cell $i$ express the bulk-derived transcriptional program associated with driver $d$?**
+
+It is **not automatically equivalent to** $P(\text{cell } i \text{ carries driver } d)$ because bulk labels can also encode lineage, purity, molecular subtype, co-mutation, or cohort composition. The manuscript therefore treats scOPE as a discovery and prioritization framework for mutation-associated phenotypes, with explicit guardrails for withholding interpretation when transfer evidence is weak.
+
+<details>
+<summary><strong>Manuscript interpretation layer: cell-state residualization</strong></summary>
+
+Raw transferred scores can be elevated in healthy cells when a bulk program captures lineage structure shared across assays. For driver $d$, cell $i$, canonical cell state $g(i)$, and cohort-specific healthy reference set $R_c$, the manuscript computes a cell-state-residual score:
+
+$$
+r_{id}
+=
+s_{id}
+-
+\operatorname{median}\left\{s_{jd}:j\in R_c,\ g(j)=g(i)\right\}.
+$$
+
+When fewer than 25 same-state reference cells are available, the cohort-wide reference median is used instead. Positive residual values indicate activity above the matched healthy-reference baseline for that cellular state; they still do not constitute an allele call.
+
+</details>
+
+<details>
+<summary><strong>Manuscript interpretation layer: ground-truth-free transfer confidence</strong></summary>
+
+For each driver, the manuscript combines four label-free properties:
+
+$$
+T_d=\max\!\left[0.05,\min\!\left(1,2(\operatorname{AUROC}^{\mathrm{bulk}}_d-0.5)\right)\right],
+$$
+
+$$
+S_d=\operatorname{clip}(\operatorname{MoranI}_d,0,1),\qquad
+C_d=\operatorname{clip}(\operatorname{Gini}_d,0,1),
+$$
+
+$$
+X_d=\operatorname{clip}\!\left(2(\operatorname{AUROC}^{\mathrm{CNV}}_d-0.5),0,1\right).
+$$
+
+Here, **$T$** measures bulk transferability, **$S$** spatial coherence on the single-cell expression-neighbor graph, **$C$** score concentration across cells, and **$X$** agreement with an independently inferred expression-derived CNV label. Available components are combined using a weighted geometric mean:
+
+$$
+\operatorname{confidence}_d
+=
+\exp\!\left[
+\frac{\sum_q w_q\log\!\left(\max(c_{dq},0.05)\right)}
+{\sum_q w_q}
+\right],
+$$
+
+with manuscript weights $w_T=1$, $w_S=1.5$, $w_C=1$, and $w_X=1$. Confidence is a **triage and abstention signal**, not a posterior genotype probability.
+
+</details>
+
+---
+
+## What scOPE gives you
+
+- A fitted, reusable bulk-to-single-cell projection for each cancer type.
+- One continuous driver-program score per cell and driver.
+- Interpretable latent factors and signed gene loadings.
+- Cross-validated bulk metrics, calibration and permutation diagnostics, component ablations, SHAP summaries, and gene-program tables.
+- A natural interface for comparing transferred programs with cell state, treatment time, spatial context, mutation-transcript evidence, or inferred CNV.
 
 ---
 
@@ -131,8 +222,8 @@ mutation_labels = load_mutation_labels("mutations.csv", sample_col="sample_id")
 bulk_pipe = BulkPipeline(
     norm_method="cpm",
     decomposition="svd",   # "svd" | "nmf" | "ica" | "pca" | "fa" | "cnmf"
-    n_components=50,
-    classifier="logistic", # "logistic" | "random_forest" | "gbm" | "xgboost" | "lightgbm" | "svm" | "mlp"
+    n_components=30,       # paper used 30; user-configurable
+    classifier="logistic",    # "logistic" | "random_forest" | "gbm" | "xgboost" | "lightgbm" | "svm" | "mlp"
 )
 bulk_pipe.fit(adata_bulk, mutation_labels, cv=5)
 bulk_pipe.save("models/bulk_pipeline.pkl")
@@ -144,12 +235,13 @@ adata_bulk_pp = bulk_pipe.preprocessor_.transform(adata_bulk)
 
 sc_pipe = SingleCellPipeline(
     bulk_pipeline=bulk_pipe,
-    alignment_method="z_score_bulk",  # "z_score_bulk" | "moment_matching" | "quantile" | "none"
+    alignment_method="moment_matching",  # alignment used in the paper
 )
 sc_pipe.fit(adata_bulk_pp, adata_sc)
 adata_sc = sc_pipe.transform(adata_sc)
 
-# adata_sc.obs now contains columns: mutation_prob_KRAS, mutation_prob_TP53, ...
+# Historical API names: mutation_prob_KRAS, mutation_prob_TP53, ...
+# Interpret these as raw driver-program scores, not direct allele probabilities.
 
 # --- Visualise -------------------------------------------------------------
 from scope.visualization import compute_umap, plot_mutation_probabilities
@@ -229,7 +321,7 @@ scOPE supports several latent-space methods, all sharing the same `fit` / `trans
 | `"ica"` | `ICADecomposition` | Independent components. Useful for finding non-Gaussian expression sources. |
 | `"pca"` | `PCADecomposition` | Standard PCA. Equivalent to SVD on centred data. |
 | `"fa"` | `FactorAnalysisDecomposition` | Probabilistic FA. Accounts for gene-specific noise variance (heteroscedasticity). |
-| `"cnmf"` | `ConsensusNMFDecomposition` | Consensus NMF (Kotliar et al., eLife 2019). Runs NMF *n* times, clusters components for stability. Recommended over single-run NMF for publication. |
+| `"cnmf"` | `ConsensusNMFDecomposition` | Repeated NMF followed by component clustering for more stable additive gene programs. |
 
 ```python
 # Consensus NMF example
@@ -251,7 +343,7 @@ bulk_pipe = BulkPipeline(
 
 ## SVD evaluation
 
-When using `decomposition="svd"`, `SVDEvaluator` produces a comprehensive suite of plots and a gene program table that characterize which components drive classification and which genes define them. This is useful for reviewers, manuscript figures, and biological interpretation.
+When using `decomposition="svd"`, `SVDEvaluator` produces a comprehensive suite of plots and a gene-program table that show which latent components drive a classifier and which genes define those components. These outputs support model auditing and biological interpretation; they do not by themselves establish driver specificity.
 
 ```python
 from scope.evaluation import SVDEvaluator
@@ -345,7 +437,7 @@ ev.export_gene_program_table(output_dir=Path("figures/"), top_components=10)
 | `compute_umap` | UMAP on latent embedding |
 | `compute_tsne` | t-SNE on latent embedding |
 | `plot_embedding` | Scatter by categorical or continuous |
-| `plot_mutation_probabilities` | Grid of per-mutation probability overlays |
+| `plot_mutation_probabilities` | Grid of per-driver program-score overlays |
 | `plot_scree` | Singular value / EVR scree plot |
 | `plot_mutation_heatmap` | Mean probability per cluster heatmap |
 
