@@ -499,7 +499,6 @@ If you use scOPE in your research, please cite:
   author  = {Ashford, Andrew J. and Lapadat, Alex and Demir, Emek},
   journal = {bioRxiv},
   year    = {2026},
-  month   = jul,
   doi     = {10.64898/2026.07.24.740598},
   url     = {https://doi.org/10.64898/2026.07.24.740598},
   note    = {Preprint posted July 26, 2026}
