@@ -485,21 +485,13 @@ ev.export_gene_program_table(output_dir=Path("figures/"), top_components=10)
 
 ---
 
-## Running tests
-
-```bash
-pytest tests/ -v --cov=scope --cov-report=term-missing
-```
-
----
-
 ## Citation
 
-A bioRxiv preprint describing scOPE has been submitted and is awaiting posting.
+The scOPE preprint is available on bioRxiv:
+
+> Ashford, A. J., Lapadat, A., & Demir, E. (2026). **scOPE identifies which driver-associated expression programs transfer from bulk tumors to single cells.** *bioRxiv*. https://doi.org/10.64898/2026.07.24.740598
 
 If you use scOPE in your research, please cite:
-
-> Ashford, A. J., Lapadat, A., and Demir, E. (2026). **scOPE identifies which driver-associated expression programs transfer from bulk tumors to single cells.** *bioRxiv*. Manuscript BIORXIV/2026/740598. DOI pending.
 
 ```bibtex
 @article{Ashford2026scOPE,
@@ -507,7 +499,10 @@ If you use scOPE in your research, please cite:
   author  = {Ashford, Andrew J. and Lapadat, Alex and Demir, Emek},
   journal = {bioRxiv},
   year    = {2026},
-  note    = {Manuscript BIORXIV/2026/740598; DOI pending}
+  month   = jul,
+  doi     = {10.64898/2026.07.24.740598},
+  url     = {https://doi.org/10.64898/2026.07.24.740598},
+  note    = {Preprint posted July 26, 2026}
 }
 ```
 
